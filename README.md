@@ -1,4 +1,5 @@
 # Zenith Food WMS
+
 A visually stunning and highly performant cloud-based Food Warehouse Management System for real-time inventory, order, and shipment tracking.
 [cloudflarebutton]
 Zenith Food WMS is a modern, minimalist, and powerful cloud-based Warehouse Management System designed for companies handling food products. Built on Cloudflare's edge network, it offers lightning-fast performance and real-time data synchronization. The system provides a centralized dashboard for monitoring key metrics, detailed modules for inventory management with expiry date tracking, order processing, and shipment tracking. Role-based access control ensures that staff members only see the information and tools relevant to their roles. The user interface is designed with a focus on clarity, efficiency, and visual elegance, minimizing clicks and presenting complex food-related data in an intuitive, actionable format.
