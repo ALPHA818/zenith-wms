@@ -1,0 +1,74 @@
+# Node modules
+node_modules/
+
+# Yarn PnP
+.pnp/
+.pnp.js
+
+# Yarn v2+ directories
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+/.yarn/cache
+
+# pnpm
+.pnpm-store/
+
+# Build output
+dist/
+build/
+out/
+public/build/
+
+# Vite / bundler caches
+.vite/
+.cache/
+.parcel-cache/
+
+# Next / Nuxt (if ever used)
+.next/
+.nuxt/
+
+# Coverage
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+debug.log*
+*.log
+
+# Env files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+Icon?
+
+# IDE/editor
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Misc
+*.tgz
+*.zip
+*.swp
+
+# Deployment / hosting
+.serverless/
+.vercel/
+.netlify/
+
+# Cache, temp
+.cache/
+/.log
