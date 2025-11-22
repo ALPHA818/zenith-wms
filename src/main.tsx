@@ -22,6 +22,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { JobCardsPage } from '@/pages/JobCardsPage';
 import { JobsPage } from '@/pages/JobsPage';
 import { LocationsPage } from '@/pages/LocationsPage';
+import ChatPage from '@/pages/ChatPage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -68,6 +69,10 @@ const router = createBrowserRouter([
       {
         path: "/settings",
         element: <SettingsPage />,
+      },
+      {
+        path: "/chat",
+        element: <ChatPage />,
       },
     ]
   }

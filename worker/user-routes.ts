@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
+import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus } from "@shared/types";
+import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- AUTH ROUTES ---
   const auth = new Hono<{ Bindings: Env }>();
@@ -447,5 +447,35 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!existed) return notFound(c, 'Location not found');
     return ok(c, { success: true });
   });
+
+  // --- MESSAGE ROUTES ---
+  wms.get('/messages', async (c) => {
+    const { items } = await MessageEntity.list<typeof MessageEntity>(c.env);
+    return ok(c, items);
+  });
+
+  wms.post('/messages', async (c) => {
+    const body = await c.req.json();
+    const validation = messageSchema.safeParse(body);
+    if (!validation.success) {
+      return bad(c, validation.error.errors[0]?.message || 'Invalid message data');
+    }
+    const message: Message = {
+      ...validation.data,
+      id: validation.data.id || `msg-${Date.now()}`,
+      timestamp: validation.data.timestamp || new Date().toISOString(),
+    };
+    const messageEntity = new MessageEntity(c.env, message.id);
+    await messageEntity.set(message);
+    return ok(c, message);
+  });
+
+  wms.delete('/messages/:id', async (c) => {
+    const id = c.req.param('id');
+    const existed = await MessageEntity.delete(c.env, id);
+    if (!existed) return notFound(c, 'Message not found');
+    return ok(c, { success: true });
+  });
+
   app.route('/api/wms', wms);
 }

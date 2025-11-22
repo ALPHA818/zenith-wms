@@ -23,6 +23,17 @@ export interface User {
   email: string;
   permissions: Permission[];
 }
+
+export interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  recipientId: string; // 'all' for company-wide messages
+  content: string;
+  timestamp: string;
+  read: boolean;
+}
+
 export interface Product {
   id: string; // SKU
   name: string;
@@ -187,3 +198,15 @@ export const locationSchema = z.object({
   description: z.string().optional(),
 });
 export type LocationFormData = z.infer<typeof locationSchema>;
+
+// Zod Schema for Message Validation
+export const messageSchema = z.object({
+  id: z.string(),
+  senderId: z.string().min(1, "Sender ID is required"),
+  senderName: z.string().min(1, "Sender name is required"),
+  recipientId: z.string().min(1, "Recipient ID is required"),
+  content: z.string().min(1, "Message content is required"),
+  timestamp: z.string(),
+  read: z.boolean().default(false),
+});
+export type MessageFormData = z.infer<typeof messageSchema>;
