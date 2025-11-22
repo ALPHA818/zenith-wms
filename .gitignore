@@ -17,6 +17,10 @@ node_modules/
 # pnpm
 .pnpm-store/
 
+# Package lock files (use bun.lockb instead)
+package-lock.json
+yarn.lock
+
 # Build output
 dist/
 build/
@@ -68,6 +72,10 @@ Icon?
 .serverless/
 .vercel/
 .netlify/
+
+# Wrangler (Cloudflare Workers)
+.wrangler/
+wrangler.toml.local
 
 # Cache, temp
 .cache/
