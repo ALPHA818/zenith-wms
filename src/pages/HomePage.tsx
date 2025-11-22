@@ -2,14 +2,17 @@ import React, { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/wms/PageHeader";
 import { DashboardStatsCard } from "@/components/wms/DashboardStatsCard";
-import { DollarSign, Package, PackageX, Truck } from "lucide-react";
+import { DollarSign, Package, PackageX, Truck, Boxes } from "lucide-react";
 import { DashboardStats } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthStore } from "@/stores/authStore";
 export function HomePage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.permissions?.includes('manage:users') ?? false;
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -37,6 +40,7 @@ export function HomePage() {
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {loading || !stats ? (
           <>
+            {isAdmin && <Skeleton className="h-[126px] rounded-lg" />}
             <Skeleton className="h-[126px] rounded-lg" />
             <Skeleton className="h-[126px] rounded-lg" />
             <Skeleton className="h-[126px] rounded-lg" />
@@ -44,11 +48,19 @@ export function HomePage() {
           </>
         ) : (
           <>
+            {isAdmin && (
+              <DashboardStatsCard
+                title="Total Inventory Value"
+                value={formatCurrency(stats.totalInventoryValue)}
+                description="+20.1% from last month"
+                icon={<DollarSign className="h-5 w-5" />}
+              />
+            )}
             <DashboardStatsCard
-              title="Total Inventory Value"
-              value={formatCurrency(stats.totalInventoryValue)}
-              description="+20.1% from last month"
-              icon={<DollarSign className="h-5 w-5" />}
+              title="Total Inventory Amount"
+              value={(stats.totalInventoryAmount || 0).toLocaleString()}
+              description="Total units in stock"
+              icon={<Boxes className="h-5 w-5" />}
             />
             <DashboardStatsCard
               title="Pending Orders"

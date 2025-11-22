@@ -66,6 +66,7 @@ export interface Shipment {
 }
 export interface DashboardStats {
   totalInventoryValue: number;
+  totalInventoryAmount: number;
   pendingOrders: number;
   outOfStockItems: number;
   shipmentsInTransit: number;

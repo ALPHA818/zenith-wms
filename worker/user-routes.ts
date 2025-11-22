@@ -53,6 +53,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     ]);
     const stats: DashboardStats = {
       totalInventoryValue: 125450.00, // Mocked as product price is not available
+      totalInventoryAmount: products.reduce((sum, p) => sum + p.quantity, 0),
       pendingOrders: orders.filter(o => o.status === 'Pending').length,
       outOfStockItems: products.filter(p => p.status === 'Out of Stock').length,
       shipmentsInTransit: shipments.filter(s => s.status === 'In Transit').length,
