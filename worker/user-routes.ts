@@ -465,9 +465,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       id: validation.data.id || `msg-${Date.now()}`,
       timestamp: validation.data.timestamp || new Date().toISOString(),
     };
-    const messageEntity = new MessageEntity(c.env, message.id);
-    await messageEntity.set(message);
-    return ok(c, message);
+    const createdMessage = await MessageEntity.create(c.env, message);
+    return ok(c, createdMessage);
   });
 
   wms.delete('/messages/:id', async (c) => {
