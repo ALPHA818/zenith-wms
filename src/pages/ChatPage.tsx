@@ -109,7 +109,10 @@ export default function ChatPage() {
 
   const handleEditMessage = (msg: Message) => {
     setEditingMessageId(msg.id);
+    // Always use the current content, not historical versions
     setMessageContent(msg.content);
+    // Reset history view for this message
+    setHistoryView(prev => ({ ...prev, [msg.id]: 0 }));
   };
 
   const handleDeleteMessage = async () => {
