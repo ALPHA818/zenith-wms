@@ -469,11 +469,46 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     return ok(c, createdMessage);
   });
 
+  wms.put('/messages/:id', async (c) => {
+    const id = c.req.param('id');
+    const body = await c.req.json<{ content: string }>();
+    if (!body.content || body.content.trim() === '') {
+      return bad(c, 'Message content is required');
+    }
+    const messageEntity = new MessageEntity(c.env, id);
+    if (!(await messageEntity.exists())) {
+      return notFound(c, 'Message not found');
+    }
+    const currentMessage = await messageEntity.getState();
+    const editHistory = currentMessage.editHistory || [];
+    editHistory.push({
+      content: currentMessage.content,
+      editedAt: new Date().toISOString(),
+    });
+    await messageEntity.patch({
+      content: body.content,
+      isEdited: true,
+      editedAt: new Date().toISOString(),
+      editHistory,
+    });
+    const updatedMessage = await messageEntity.getState();
+    return ok(c, updatedMessage);
+  });
+
   wms.delete('/messages/:id', async (c) => {
     const id = c.req.param('id');
-    const existed = await MessageEntity.delete(c.env, id);
-    if (!existed) return notFound(c, 'Message not found');
-    return ok(c, { success: true });
+    const { userId } = await c.req.json<{ userId: string }>();
+    const messageEntity = new MessageEntity(c.env, id);
+    if (!(await messageEntity.exists())) {
+      return notFound(c, 'Message not found');
+    }
+    await messageEntity.patch({
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+      deletedBy: userId,
+    });
+    const deletedMessage = await messageEntity.getState();
+    return ok(c, deletedMessage);
   });
 
   app.route('/api/wms', wms);
