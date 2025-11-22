@@ -20,7 +20,7 @@ export function AppLayout({ children, container = false, className, contentClass
     navigate('/login');
   };
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <AppSidebar />
       <SidebarInset className={className}>
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
