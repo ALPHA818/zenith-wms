@@ -1,5 +1,5 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Boxes,
@@ -51,10 +51,10 @@ export function AppSidebar(): JSX.Element {
   return (
     <Sidebar>
       <SidebarHeader>
-        <a href="/" className="flex items-center gap-2.5 px-2 py-1">
+        <Link to="/" className="flex items-center gap-2.5 px-2 py-1">
           <Warehouse className="h-7 w-7 text-primary" />
           <span className="text-lg font-semibold tracking-tight">Zenith WMS</span>
-        </a>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
@@ -70,10 +70,10 @@ export function AppSidebar(): JSX.Element {
                     location.pathname === item.href && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
                   )}
                 >
-                  <a href={item.href}>
+                  <Link to={item.href}>
                     <item.icon className="mr-3 h-5 w-5" />
                     <span>{item.label}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ) : null
