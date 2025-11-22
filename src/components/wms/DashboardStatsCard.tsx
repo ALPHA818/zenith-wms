@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 interface DashboardStatsCardProps {
@@ -7,10 +8,11 @@ interface DashboardStatsCardProps {
   description: string;
   icon: React.ReactNode;
   className?: string;
+  href?: string;
 }
-export function DashboardStatsCard({ title, value, description, icon, className }: DashboardStatsCardProps) {
-  return (
-    <Card className={cn("transition-all duration-300 hover:shadow-lg hover:-translate-y-1", className)}>
+export function DashboardStatsCard({ title, value, description, icon, className, href }: DashboardStatsCardProps) {
+  const cardContent = (
+    <Card className={cn("transition-all duration-300", href && "cursor-pointer hover:shadow-lg hover:-translate-y-1", className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
         <div className="text-muted-foreground">{icon}</div>
@@ -21,4 +23,14 @@ export function DashboardStatsCard({ title, value, description, icon, className 
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link to={href} className="block">
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return cardContent;
 }
