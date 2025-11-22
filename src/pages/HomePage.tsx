@@ -54,6 +54,7 @@ export function HomePage() {
                 value={formatCurrency(stats.totalInventoryValue)}
                 description="+20.1% from last month"
                 icon={<DollarSign className="h-5 w-5" />}
+                href="/inventory"
               />
             )}
             <DashboardStatsCard
@@ -61,24 +62,28 @@ export function HomePage() {
               value={(stats.totalInventoryAmount || 0).toLocaleString()}
               description="Total units in stock"
               icon={<Boxes className="h-5 w-5" />}
+              href="/inventory"
             />
             <DashboardStatsCard
               title="Pending Orders"
               value={`+${stats.pendingOrders}`}
               description="Awaiting processing"
               icon={<Package className="h-5 w-5" />}
+              href="/orders"
             />
             <DashboardStatsCard
               title="Out of Stock Items"
               value={`${stats.outOfStockItems}`}
               description="Needs immediate restocking"
               icon={<PackageX className="h-5 w-5" />}
+              href="/inventory"
             />
             <DashboardStatsCard
               title="Shipments In-Transit"
               value={`+${stats.shipmentsInTransit}`}
               description="Currently on the way"
               icon={<Truck className="h-5 w-5" />}
+              href="/shipments"
             />
           </>
         )}
