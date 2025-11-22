@@ -32,6 +32,12 @@ export interface Message {
   content: string;
   timestamp: string;
   read: boolean;
+  isEdited?: boolean;
+  editedAt?: string;
+  editHistory?: Array<{ content: string; editedAt: string }>;
+  isDeleted?: boolean;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 export interface Product {
@@ -208,5 +214,11 @@ export const messageSchema = z.object({
   content: z.string().min(1, "Message content is required"),
   timestamp: z.string(),
   read: z.boolean().default(false),
+  isEdited: z.boolean().optional(),
+  editedAt: z.string().optional(),
+  editHistory: z.array(z.object({ content: z.string(), editedAt: z.string() })).optional(),
+  isDeleted: z.boolean().optional(),
+  deletedAt: z.string().optional(),
+  deletedBy: z.string().optional(),
 });
 export type MessageFormData = z.infer<typeof messageSchema>;

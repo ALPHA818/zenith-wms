@@ -7,7 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Send } from 'lucide-react';
+import { Send, Edit2, Trash2, ChevronLeft, ChevronRight, Eye, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api-client';
 import type { User } from '@shared/types';
 
@@ -19,14 +29,25 @@ interface Message {
   content: string;
   timestamp: string;
   read: boolean;
+  isEdited?: boolean;
+  editedAt?: string;
+  editHistory?: Array<{ content: string; editedAt: string }>;
+  isDeleted?: boolean;
+  deletedAt?: string;
+  deletedBy?: string;
 }
 
 export default function ChatPage() {
   const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.permissions.includes('manage:users');
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('all');
   const [messageContent, setMessageContent] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+  const [historyView, setHistoryView] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchMessages();
@@ -57,24 +78,71 @@ export default function ChatPage() {
     if (!messageContent.trim() || !user) return;
 
     try {
-      const newMessage: Message = {
-        id: `msg-${Date.now()}`,
-        senderId: user.id,
-        senderName: user.name,
-        recipientId: selectedUser,
-        content: messageContent.trim(),
-        timestamp: new Date().toISOString(),
-        read: false,
-      };
+      if (editingMessageId) {
+        await api(`/api/wms/messages/${editingMessageId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ content: messageContent.trim() }),
+        });
+        setEditingMessageId(null);
+      } else {
+        const newMessage: Message = {
+          id: `msg-${Date.now()}`,
+          senderId: user.id,
+          senderName: user.name,
+          recipientId: selectedUser,
+          content: messageContent.trim(),
+          timestamp: new Date().toISOString(),
+          read: false,
+        };
 
-      await api('/api/wms/messages', {
-        method: 'POST',
-        body: JSON.stringify(newMessage),
-      });
+        await api('/api/wms/messages', {
+          method: 'POST',
+          body: JSON.stringify(newMessage),
+        });
+      }
       setMessageContent('');
       fetchMessages();
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const handleEditMessage = (msg: Message) => {
+    setEditingMessageId(msg.id);
+    setMessageContent(msg.content);
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!messageToDelete || !user) return;
+
+    try {
+      await api(`/api/wms/messages/${messageToDelete}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ userId: user.id }),
+      });
+      setDeleteDialogOpen(false);
+      setMessageToDelete(null);
+      fetchMessages();
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    }
+  };
+
+  const getDisplayedContent = (msg: Message) => {
+    if (!isAdmin || !msg.editHistory || msg.editHistory.length === 0) {
+      return msg.content;
+    }
+    const currentIndex = historyView[msg.id] || 0;
+    if (currentIndex === 0) return msg.content;
+    return msg.editHistory[msg.editHistory.length - currentIndex].content;
+  };
+
+  const navigateHistory = (msgId: string, direction: 'prev' | 'next', totalVersions: number) => {
+    const current = historyView[msgId] || 0;
+    if (direction === 'prev' && current < totalVersions - 1) {
+      setHistoryView({ ...historyView, [msgId]: current + 1 });
+    } else if (direction === 'next' && current > 0) {
+      setHistoryView({ ...historyView, [msgId]: current - 1 });
     }
   };
 
@@ -121,7 +189,12 @@ export default function ChatPage() {
         {msgs.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">No messages yet</p>
         ) : (
-          msgs.map((msg) => (
+          msgs.filter(msg => !msg.isDeleted || isAdmin).map((msg) => {
+            const totalVersions = (msg.editHistory?.length || 0) + 1;
+            const currentVersion = historyView[msg.id] || 0;
+            const displayContent = getDisplayedContent(msg);
+            
+            return (
             <div
               key={msg.id}
               className={`flex items-start gap-3 ${
@@ -141,19 +214,70 @@ export default function ChatPage() {
                   <span className="text-xs text-muted-foreground">
                     {formatTime(msg.timestamp)}
                   </span>
+                  {msg.isEdited && <span className="text-xs text-muted-foreground">(edited)</span>}
+                  {msg.isDeleted && <span className="text-xs text-destructive">(deleted)</span>}
                 </div>
                 <div
                   className={`rounded-lg px-3 py-2 ${
                     msg.senderId === user?.id
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
-                  }`}
+                  } ${msg.isDeleted ? 'opacity-50 italic' : ''}`}
                 >
-                  {msg.content}
+                  {msg.isDeleted ? '[Message deleted]' : displayContent}
                 </div>
+                {isAdmin && msg.editHistory && msg.editHistory.length > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2"
+                      onClick={() => navigateHistory(msg.id, 'prev', totalVersions)}
+                      disabled={currentVersion >= totalVersions - 1}
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {currentVersion === 0 ? 'Current' : `Version ${totalVersions - currentVersion}/${totalVersions}`}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2"
+                      onClick={() => navigateHistory(msg.id, 'next', totalVersions)}
+                      disabled={currentVersion === 0}
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                {msg.senderId === user?.id && !msg.isDeleted && (
+                  <div className="flex gap-1 mt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2"
+                      onClick={() => handleEditMessage(msg)}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2"
+                      onClick={() => {
+                        setMessageToDelete(msg.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </ScrollArea>
@@ -179,8 +303,20 @@ export default function ChatPage() {
           <div className="rounded-lg border bg-card p-4">
             {renderMessages(companyMessages)}
             <div className="flex gap-2 mt-4">
+              {editingMessageId && (
+                <Button
+                  onClick={() => {
+                    setEditingMessageId(null);
+                    setMessageContent('');
+                  }}
+                  size="icon"
+                  variant="outline"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
               <Input
-                placeholder="Type a message to everyone..."
+                placeholder={editingMessageId ? 'Editing message...' : 'Type a message to everyone...'}
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -226,10 +362,24 @@ export default function ChatPage() {
                 <>
                   {renderMessages(directMessages)}
                   <div className="flex gap-2 mt-4">
+                    {editingMessageId && (
+                      <Button
+                        onClick={() => {
+                          setEditingMessageId(null);
+                          setMessageContent('');
+                        }}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Input
-                      placeholder={`Message ${
-                        users.find((u) => u.id === selectedUser)?.name || ''
-                      }...`}
+                      placeholder={
+                        editingMessageId
+                          ? 'Editing message...'
+                          : `Message ${users.find((u) => u.id === selectedUser)?.name || ''}...`
+                      }
                       value={messageContent}
                       onChange={(e) => setMessageContent(e.target.value)}
                       onKeyPress={handleKeyPress}
@@ -245,6 +395,21 @@ export default function ChatPage() {
         </TabsContent>
       </Tabs>
       </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this message? This action can be viewed by administrators.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMessage}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

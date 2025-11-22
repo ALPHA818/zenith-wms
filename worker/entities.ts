@@ -86,6 +86,6 @@ export class LocationEntity extends IndexedEntity<Location> {
 export class MessageEntity extends IndexedEntity<Message> {
     static readonly entityName = "message";
     static readonly indexName = "messages";
-    static readonly initialState: Message = { id: "", senderId: "", senderName: "", recipientId: "all", content: "", timestamp: "", read: false };
+    static readonly initialState: Message = { id: "", senderId: "", senderName: "", recipientId: "all", content: "", timestamp: "", read: false, isEdited: false, isDeleted: false };
     static seedData: Message[] = [];
 }
