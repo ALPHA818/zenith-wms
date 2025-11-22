@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/wms/PageHeader';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
@@ -159,13 +160,14 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Chat"
-        subtitle="Communicate with your team"
-      />
+    <AppLayout container>
+      <div className="space-y-6">
+        <PageHeader
+          title="Chat"
+          subtitle="Communicate with your team"
+        />
 
-      <Tabs defaultValue="company" className="w-full">
+        <Tabs defaultValue="company" className="w-full">
         <TabsList>
           <TabsTrigger value="company" onClick={() => setSelectedUser('all')}>
             Company Chat
@@ -242,6 +244,7 @@ export default function ChatPage() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </AppLayout>
   );
 }
