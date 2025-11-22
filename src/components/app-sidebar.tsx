@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Briefcase,
   MapPin,
+  MessageSquare,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { href: "/locations", icon: MapPin, label: "Locations", permission: 'manage:locations' },
   { href: "/job-cards", icon: ClipboardList, label: "Job Cards" },
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
+  { href: "/chat", icon: MessageSquare, label: "Chat" },
   { href: "/reports", icon: BarChart3, label: "Reports", permission: 'view:reports' },
   { href: "/settings", icon: Settings, label: "Settings", permission: 'manage:users' },
 ];
