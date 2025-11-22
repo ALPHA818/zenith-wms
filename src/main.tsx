@@ -23,6 +23,7 @@ import { JobCardsPage } from '@/pages/JobCardsPage';
 import { JobsPage } from '@/pages/JobsPage';
 import { LocationsPage } from '@/pages/LocationsPage';
 import ChatPage from '@/pages/ChatPage';
+import { GroupsPage } from '@/pages/GroupsPage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -73,6 +74,10 @@ const router = createBrowserRouter([
       {
         path: "/chat",
         element: <ChatPage />,
+      },
+      {
+        path: "/groups",
+        element: <GroupsPage />,
       },
     ]
   }

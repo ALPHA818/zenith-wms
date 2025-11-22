@@ -40,6 +40,15 @@ export interface Message {
   deletedBy?: string;
 }
 
+export interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  memberIds: string[]; // User IDs
+  createdAt: string;
+  createdBy: string; // User ID
+}
+
 export interface Product {
   id: string; // SKU
   name: string;
@@ -222,3 +231,14 @@ export const messageSchema = z.object({
   deletedBy: z.string().optional(),
 });
 export type MessageFormData = z.infer<typeof messageSchema>;
+
+// Zod Schema for Group Validation
+export const groupSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Group name is required"),
+  description: z.string().optional(),
+  memberIds: z.array(z.string()).default([]),
+  createdAt: z.string().optional(),
+  createdBy: z.string().optional(),
+});
+export type GroupFormData = z.infer<typeof groupSchema>;
