@@ -159,24 +159,30 @@ export const GroupFormSheet: React.FC<GroupFormSheetProps> = ({
             <Label>Members ({formData.memberIds.length} selected)</Label>
             <ScrollArea className="h-[300px] rounded-md border p-4">
               <div className="space-y-4">
-                {users.map((u) => (
-                  <div key={u.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`user-${u.id}`}
-                      checked={formData.memberIds.includes(u.id)}
-                      onCheckedChange={() => handleMemberToggle(u.id)}
-                    />
-                    <Label
-                      htmlFor={`user-${u.id}`}
-                      className="flex-1 cursor-pointer"
-                    >
-                      <div className="font-medium">{u.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {u.email}
-                      </div>
-                    </Label>
-                  </div>
-                ))}
+                {users.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No users available
+                  </p>
+                ) : (
+                  users.map((u) => (
+                    <div key={u.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`user-${u.id}`}
+                        checked={formData.memberIds.includes(u.id)}
+                        onCheckedChange={() => handleMemberToggle(u.id)}
+                      />
+                      <Label
+                        htmlFor={`user-${u.id}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="font-medium">{u.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {u.email}
+                        </div>
+                      </Label>
+                    </div>
+                  ))
+                )}
               </div>
             </ScrollArea>
           </div>
