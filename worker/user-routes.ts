@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
+import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema } from "@shared/types";
+import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- AUTH ROUTES ---
   const auth = new Hono<{ Bindings: Env }>();
@@ -41,6 +41,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       JobEntity.ensureSeed(c.env),
       JobCardEntity.ensureSeed(c.env),
       LocationEntity.ensureSeed(c.env),
+      GroupEntity.ensureSeed(c.env),
     ]);
     await next();
   });
