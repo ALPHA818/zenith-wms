@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChevronLeft, ChevronRight, List } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, Label } from 'recharts';
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { ChevronLeft, ChevronRight, List, Settings } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { InventorySummaryItem, OrderTrendItem } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
@@ -45,13 +47,17 @@ export function ReportsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [rotationSpeed, setRotationSpeed] = useState(50); // Default 50ms interval
+  const [isRotating, setIsRotating] = useState(true); // Control rotation on/off
 
   useEffect(() => {
+    if (!isRotating) return;
+    
     const interval = setInterval(() => {
       setRotation(prev => (prev + 0.5) % 360);
-    }, 50);
+    }, rotationSpeed);
     return () => clearInterval(interval);
-  }, []);
+  }, [rotationSpeed, isRotating]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -147,13 +153,72 @@ export function ReportsPage() {
                   </span>
                 )}
               </CardTitle>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <List className="h-4 w-4 mr-2" />
-                    Legend
-                  </Button>
-                </SheetTrigger>
+              <div className="flex gap-2">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Chart Settings</SheetTitle>
+                      <SheetDescription>
+                        Customize the pie chart rotation speed
+                      </SheetDescription>
+                    </SheetHeader>
+                    <div className="mt-6 space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <Label>Rotation</Label>
+                          <Button
+                            variant={isRotating ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setIsRotating(!isRotating)}
+                          >
+                            {isRotating ? "Stop" : "Start"}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <Label htmlFor="rotation-speed">
+                          Rotation Speed
+                          <span className="text-sm text-muted-foreground ml-2">
+                            ({rotationSpeed}ms)
+                          </span>
+                        </Label>
+                        <Slider
+                          id="rotation-speed"
+                          min={10}
+                          max={500}
+                          step={10}
+                          value={[rotationSpeed]}
+                          onValueChange={(value) => setRotationSpeed(value[0])}
+                          className="w-full"
+                          disabled={!isRotating}
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Fast (10ms)</span>
+                          <span>Slow (500ms)</span>
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t">
+                        <p className="text-sm text-muted-foreground">
+                          {isRotating ? "Lower values = faster rotation" : "Rotation is stopped"}
+                          {isRotating && <><br />Higher values = slower rotation</>}
+                        </p>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <List className="h-4 w-4 mr-2" />
+                      Legend
+                    </Button>
+                  </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
                     <SheetTitle>Product Legend</SheetTitle>
@@ -199,8 +264,9 @@ export function ReportsPage() {
                       </div>
                     </ScrollArea>
                   </div>
-                </SheetContent>
-              </Sheet>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
