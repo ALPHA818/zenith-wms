@@ -10,12 +10,36 @@ const MOCK_LOCATIONS: Location[] = [
     { id: 'B02B', name: 'Bin B-07', type: 'Bin', description: 'Small parts bin.' },
     { id: 'D01A', name: 'Receiving Dock A', type: 'Dock', description: 'Primary inbound dock.' },
 ];
-const MOCK_PRODUCTS: Product[] = [
-  { id: 'PROD-APL-01', name: 'Organic Apples', category: 'Produce', quantity: 250, locationId: 'A01S', status: 'In Stock', lastUpdated: new Date().toISOString(), expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), storageTemp: '2-4°C', allergens: 'None' },
-  { id: 'PROD-CHE-01', name: 'Cheddar Cheese', category: 'Dairy', quantity: 80, locationId: 'A01S', status: 'In Stock', lastUpdated: new Date().toISOString(), expiryDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(), storageTemp: '3-5°C', allergens: 'Dairy' },
-  { id: 'PROD-PEA-01', name: 'Frozen Peas', category: 'Frozen', quantity: 40, locationId: 'B02B', status: 'Low Stock', lastUpdated: new Date().toISOString(), expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), storageTemp: '-18°C', allergens: 'None' },
-  { id: 'PROD-YOG-01', name: 'Greek Yogurt', category: 'Dairy', quantity: 0, locationId: 'B02B', status: 'Out of Stock', lastUpdated: new Date().toISOString(), expiryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), storageTemp: '3-5°C', allergens: 'Dairy' },
-];
+
+// Generate 400 test products
+const generateMockProducts = (): Product[] => {
+  const categories = ['Produce', 'Dairy', 'Frozen', 'Bakery', 'Beverages', 'Snacks', 'Canned Goods', 'Meat', 'Seafood', 'Pantry'];
+  const products: Product[] = [];
+  
+  for (let i = 1; i <= 400; i++) {
+    const category = categories[i % categories.length];
+    const quantity = Math.floor(Math.random() * 500) + 1; // Random quantity between 1-500
+    const status: Product['status'] = quantity === 0 ? 'Out of Stock' : quantity < 50 ? 'Low Stock' : 'In Stock';
+    
+    products.push({
+      id: `PROD-${String(i).padStart(5, '0')}`,
+      name: `Product ${i} - ${category}`,
+      category,
+      quantity,
+      locationId: ['A01S', 'B02B', 'D01A'][i % 3],
+      status,
+      lastUpdated: new Date().toISOString(),
+      expiryDate: new Date(Date.now() + (30 + i % 335) * 24 * 60 * 60 * 1000).toISOString(),
+      storageTemp: `${Math.floor(Math.random() * 20) - 5}°C`,
+      allergens: i % 3 === 0 ? 'None' : i % 3 === 1 ? 'Dairy' : 'Nuts',
+    });
+  }
+  
+  return products;
+};
+
+const MOCK_PRODUCTS: Product[] = generateMockProducts();
+
 const MOCK_ORDERS: Order[] = [
   { id: 'ORD-001', type: 'Sales', customerName: 'Global Corp', date: new Date().toISOString(), status: 'Processing', items: [{ productId: 'PROD-APL-01', productName: 'Organic Apples', quantity: 50 }, { productId: 'PROD-CHE-01', productName: 'Cheddar Cheese', quantity: 20 }], total: 1500.00, itemCount: 70 },
   { id: 'ORD-002', type: 'Sales', customerName: 'Innovate Inc', date: new Date().toISOString(), status: 'Pending', items: [{ productId: 'PROD-PEA-01', productName: 'Frozen Peas', quantity: 10 }], total: 750.50, itemCount: 10 },

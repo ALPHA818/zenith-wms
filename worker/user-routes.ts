@@ -64,10 +64,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- REPORTING ENDPOINTS ---
   wms.get('/reports/inventory-summary', async (c) => {
     const { items: products } = await ProductEntity.list<typeof ProductEntity>(c.env);
-    const data: InventorySummaryItem[] = products.map(product => ({ 
-      name: product.name, 
-      quantity: product.quantity 
-    }));
+    const data: InventorySummaryItem[] = products
+      .filter(product => product.quantity > 0)
+      .map(product => ({ 
+        name: product.name, 
+        quantity: product.quantity 
+      }));
     return ok(c, data);
   });
   wms.get('/reports/order-trends', async (c) => {
