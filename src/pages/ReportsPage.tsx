@@ -12,6 +12,15 @@ export function ReportsPage() {
   const [inventoryData, setInventoryData] = useState<InventorySummaryItem[]>([]);
   const [orderData, setOrderData] = useState<OrderTrendItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rotation, setRotation] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRotation(prev => (prev + 1) % 360);
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -45,7 +54,18 @@ export function ReportsPage() {
             ) : (
               <ResponsiveContainer width="100%" height={500}>
                 <PieChart>
-                  <Pie data={inventoryData} dataKey="quantity" nameKey="name" cx="60%" cy="50%" outerRadius={150} fill="hsl(var(--primary))" label>
+                  <Pie 
+                    data={inventoryData} 
+                    dataKey="quantity" 
+                    nameKey="name" 
+                    cx="60%" 
+                    cy="50%" 
+                    outerRadius={150} 
+                    fill="hsl(var(--primary))" 
+                    label
+                    startAngle={rotation}
+                    endAngle={rotation + 360}
+                  >
                     {inventoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
