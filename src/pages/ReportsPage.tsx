@@ -17,7 +17,7 @@ export function ReportsPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       setRotation(prev => (prev + 1) % 360);
-    }, 100);
+    }, 150);
     return () => clearInterval(interval);
   }, []);
 
