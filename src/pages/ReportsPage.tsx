@@ -108,7 +108,7 @@ export function ReportsPage() {
     const shouldShowLabels = data.length <= 10;
     
     return (
-      <ResponsiveContainer width="100%" height={500}>
+      <ResponsiveContainer width="100%" height={1200}>
         <PieChart>
           <Pie 
             data={data} 
@@ -116,7 +116,7 @@ export function ReportsPage() {
             nameKey="name" 
             cx="50%"
             cy="50%" 
-            outerRadius={150} 
+            outerRadius={400} 
             fill="hsl(var(--primary))" 
             label={shouldShowLabels ? ({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%` : false}
             startAngle={rotation}
@@ -135,8 +135,8 @@ export function ReportsPage() {
   return (
     <AppLayout container>
       <PageHeader title="Reports & Analytics" subtitle="Visualize your warehouse performance." />
-      <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-8 grid-cols-1">
+        <Card className="col-span-full">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>
@@ -205,7 +205,7 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="w-full h-[500px]" />
+              <Skeleton className="w-full h-[1200px]" />
             ) : currentChunk.length > 0 ? (
               <>
                 {renderPieChart(currentChunk)}
@@ -236,21 +236,21 @@ export function ReportsPage() {
                 )}
               </>
             ) : (
-              <div className="flex items-center justify-center h-[500px] text-muted-foreground">
+              <div className="flex items-center justify-center h-[1200px] text-muted-foreground">
                 No products found
               </div>
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="col-span-full">
           <CardHeader>
             <CardTitle>Monthly Order Volume</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="w-full h-[300px]" />
+              <Skeleton className="w-full h-[600px]" />
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={600}>
                 <BarChart data={orderData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
