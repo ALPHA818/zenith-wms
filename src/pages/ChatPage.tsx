@@ -227,7 +227,7 @@ export default function ChatPage() {
                       : 'bg-muted'
                   } ${msg.isDeleted ? 'opacity-50 italic' : ''}`}
                 >
-                  {msg.isDeleted ? '[Message deleted]' : displayContent}
+                  {msg.isDeleted && !isAdmin ? '[Message deleted]' : displayContent}
                 </div>
                 {isAdmin && msg.editHistory && msg.editHistory.length > 0 && (
                   <div className="flex items-center gap-1 mt-1">

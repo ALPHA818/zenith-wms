@@ -1,5 +1,5 @@
 import { IndexedEntity } from "./core-utils";
-import type { Product, Order, Shipment, User, Job, JobCard, Location, Message } from "@shared/types";
+import type { Product, Order, Shipment, User, Job, JobCard, Location, Message, Group } from "@shared/types";
 import { ALL_PERMISSIONS } from "@shared/types";
 // Define a type for mock users that includes the password for authentication simulation
 type MockUserWithPassword = User & { password: string };
@@ -88,4 +88,11 @@ export class MessageEntity extends IndexedEntity<Message> {
     static readonly indexName = "messages";
     static readonly initialState: Message = { id: "", senderId: "", senderName: "", recipientId: "all", content: "", timestamp: "", read: false, isEdited: false, isDeleted: false };
     static seedData: Message[] = [];
+}
+
+export class GroupEntity extends IndexedEntity<Group> {
+    static readonly entityName = "group";
+    static readonly indexName = "groups";
+    static readonly initialState: Group = { id: "", name: "", description: "", memberIds: [], createdAt: "", createdBy: "" };
+    static seedData: Group[] = [];
 }
