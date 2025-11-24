@@ -37,7 +37,7 @@ export function ReportsPage() {
       <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Inventory by Category</CardTitle>
+            <CardTitle>Inventory by Product</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
