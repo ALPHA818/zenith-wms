@@ -41,17 +41,17 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="w-full h-[300px]" />
+              <Skeleton className="w-full h-[500px]" />
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={500}>
                 <PieChart>
-                  <Pie data={inventoryData} dataKey="quantity" nameKey="name" cx="50%" cy="50%" outerRadius={120} fill="hsl(var(--primary))" label>
+                  <Pie data={inventoryData} dataKey="quantity" nameKey="name" cx="60%" cy="50%" outerRadius={150} fill="hsl(var(--primary))" label>
                     {inventoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
-                  <Legend />
+                  <Legend layout="vertical" align="left" verticalAlign="middle" />
                 </PieChart>
               </ResponsiveContainer>
             )}
