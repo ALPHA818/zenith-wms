@@ -24,6 +24,8 @@ import { JobsPage } from '@/pages/JobsPage';
 import { LocationsPage } from '@/pages/LocationsPage';
 import ChatPage from '@/pages/ChatPage';
 import { GroupsPage } from '@/pages/GroupsPage';
+import { PalletProdPage } from '@/pages/PalletProdPage';
+import { PalletRawPage } from '@/pages/PalletRawPage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -54,6 +56,14 @@ const router = createBrowserRouter([
       {
         path: "/locations",
         element: <LocationsPage />,
+      },
+      {
+        path: "/pallet-prod",
+        element: <PalletProdPage />,
+      },
+      {
+        path: "/pallet-raw",
+        element: <PalletRawPage />,
       },
       {
         path: "/job-cards",
