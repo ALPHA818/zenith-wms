@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
@@ -25,6 +27,10 @@ export function SettingsPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [autoLogoutEnabled, setAutoLogoutEnabled] = useState(() => {
+    const stored = localStorage.getItem('autoLogoutEnabled');
+    return stored === 'true';
+  });
   const authUser = useAuthStore((state) => state.user);
   const canManage = authUser?.permissions?.includes('manage:users') ?? false;
   const isMobile = useIsMobile();
@@ -73,6 +79,14 @@ export function SettingsPage() {
       toast.error(`Failed to save user: ${errorMessage}`);
       console.error(error);
     }
+  };
+
+  const handleAutoLogoutToggle = (enabled: boolean) => {
+    setAutoLogoutEnabled(enabled);
+    localStorage.setItem('autoLogoutEnabled', String(enabled));
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event('localStorageUpdate'));
+    toast.success(`Auto-logout ${enabled ? 'enabled' : 'disabled'} successfully.`);
   };
   const renderActions = (user: User) => (
     <DropdownMenu>
@@ -165,6 +179,31 @@ export function SettingsPage() {
     <AppLayout container>
       <PageHeader title="Settings" subtitle="Manage your warehouse and user configurations." />
       <div className="space-y-8">
+        {canManage && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Security Settings</CardTitle>
+              <CardDescription>Configure security and authentication options.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="auto-logout" className="text-base cursor-pointer">
+                    Auto-logout on inactivity
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically log out users after 10 minutes of inactivity
+                  </p>
+                </div>
+                <Switch
+                  id="auto-logout"
+                  checked={autoLogoutEnabled}
+                  onCheckedChange={handleAutoLogoutToggle}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>

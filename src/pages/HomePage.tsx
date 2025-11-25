@@ -34,7 +34,6 @@ interface NavCard {
 }
 
 const navCards: NavCard[] = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard", description: "Overview of operations" },
   { href: "/inventory", icon: Boxes, label: "Inventory", description: "Manage product stock" },
   { href: "/orders", icon: ShoppingCart, label: "Orders", description: "Track and process orders" },
   { href: "/shipments", icon: Truck, label: "Shipments", description: "Monitor deliveries" },

@@ -94,10 +94,10 @@ export function ReportsPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // Split filtered data into chunks of 100 for multiple pie charts
+  // Split filtered data into chunks of 25 for multiple pie charts
   const pieChartChunks = [];
-  for (let i = 0; i < filteredData.length; i += 100) {
-    pieChartChunks.push(filteredData.slice(i, i + 100));
+  for (let i = 0; i < filteredData.length; i += 25) {
+    pieChartChunks.push(filteredData.slice(i, i + 25));
   }
 
   const currentChunk = pieChartChunks[currentPage] || [];
@@ -111,30 +111,74 @@ export function ReportsPage() {
   };
 
   const renderPieChart = (data: InventorySummaryItem[]) => {
-    const shouldShowLabels = data.length <= 10;
-    
     return (
-      <ResponsiveContainer width="100%" height={1200}>
-        <PieChart>
-          <Pie 
-            data={data} 
-            dataKey="quantity" 
-            nameKey="name" 
-            cx="50%"
-            cy="50%" 
-            outerRadius={400} 
-            fill="hsl(var(--primary))" 
-            label={shouldShowLabels ? ({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%` : false}
-            startAngle={rotation}
-            endAngle={rotation + 360}
-          >
-            {data.map((entry, idx) => (
-              <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-      </ResponsiveContainer>
+      <div className="flex gap-8 items-start">
+        {/* Legend on the left */}
+        <div className="flex-shrink-0 w-64">
+          <h3 className="font-semibold mb-4">Products</h3>
+          <ScrollArea className="h-[1000px]">
+            <div className="space-y-2">
+              {data.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-sm">
+                  <div
+                    className="w-4 h-4 rounded-sm flex-shrink-0"
+                    style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                  />
+                  <span className="flex-1 truncate" title={item.name}>{item.name}</span>
+                  <span className="text-muted-foreground">{item.quantity}</span>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Pie chart on the right */}
+        <div className="flex-1">
+          <ResponsiveContainer width="100%" height={1000}>
+            <PieChart>
+              <Pie 
+                data={data} 
+                dataKey="quantity" 
+                nameKey="name" 
+                cx="50%"
+                cy="50%" 
+                outerRadius={350} 
+                fill="hsl(var(--primary))" 
+                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+                  const RADIAN = Math.PI / 180;
+                  const radius = outerRadius + 40;
+                  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                  
+                  return (
+                    <text 
+                      x={x} 
+                      y={y} 
+                      fill="hsl(var(--foreground))"
+                      textAnchor={x > cx ? 'start' : 'end'} 
+                      dominantBaseline="central"
+                      className="text-xs"
+                    >
+                      {`${(percent * 100).toFixed(1)}%`}
+                    </text>
+                  );
+                }}
+                labelLine={{
+                  stroke: 'hsl(var(--border))',
+                  strokeWidth: 1
+                }}
+                startAngle={rotation}
+                endAngle={rotation + 360}
+              >
+                {data.map((entry, idx) => (
+                  <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     );
   };
 
@@ -271,7 +315,7 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="w-full h-[1200px]" />
+              <Skeleton className="w-full h-[1000px]" />
             ) : currentChunk.length > 0 ? (
               <>
                 {renderPieChart(currentChunk)}
@@ -302,7 +346,7 @@ export function ReportsPage() {
                 )}
               </>
             ) : (
-              <div className="flex items-center justify-center h-[1200px] text-muted-foreground">
+              <div className="flex items-center justify-center h-[1000px] text-muted-foreground">
                 No products found
               </div>
             )}

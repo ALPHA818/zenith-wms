@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { useInactivityLogout } from "@/hooks/use-inactivity-logout";
 type AppLayoutProps = {
   children: React.ReactNode;
   container?: boolean;
@@ -15,6 +16,33 @@ type AppLayoutProps = {
 export function AppLayout({ children, container = false, className, contentClassName }: AppLayoutProps): JSX.Element {
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
+  
+  const [autoLogoutEnabled, setAutoLogoutEnabled] = useState(() => {
+    const stored = localStorage.getItem('autoLogoutEnabled');
+    return stored === 'true';
+  });
+
+  // Listen for changes to localStorage from other components
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const stored = localStorage.getItem('autoLogoutEnabled');
+      setAutoLogoutEnabled(stored === 'true');
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    // Also listen for custom event for same-tab updates
+    const handleLocalUpdate = () => handleStorageChange();
+    window.addEventListener('localStorageUpdate', handleLocalUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorageUpdate', handleLocalUpdate);
+    };
+  }, []);
+
+  // Enable inactivity logout based on setting
+  useInactivityLogout(autoLogoutEnabled);
+
   const handleLogout = () => {
     logout();
     navigate('/login');

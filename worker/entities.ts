@@ -11,12 +11,12 @@ const MOCK_LOCATIONS: Location[] = [
     { id: 'D01A', name: 'Receiving Dock A', type: 'Dock', description: 'Primary inbound dock.' },
 ];
 
-// Generate 400 test products
+// Generate 25 test products
 const generateMockProducts = (): Product[] => {
   const categories = ['Produce', 'Dairy', 'Frozen', 'Bakery', 'Beverages', 'Snacks', 'Canned Goods', 'Meat', 'Seafood', 'Pantry'];
   const products: Product[] = [];
   
-  for (let i = 1; i <= 400; i++) {
+  for (let i = 1; i <= 25; i++) {
     const category = categories[i % categories.length];
     const quantity = Math.floor(Math.random() * 500) + 1; // Random quantity between 1-500
     const status: Product['status'] = quantity === 0 ? 'Out of Stock' : quantity < 50 ? 'Low Stock' : 'In Stock';
