@@ -21,6 +21,13 @@ const generateMockProducts = (): Product[] => {
     const quantity = Math.floor(Math.random() * 500) + 1; // Random quantity between 1-500
     const status: Product['status'] = quantity === 0 ? 'Out of Stock' : quantity < 50 ? 'Low Stock' : 'In Stock';
     
+    // Generate batch code in format: BATCH-YYYY-MMDD-XXX
+    const year = new Date().getFullYear();
+    const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+    const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+    const batchNum = String(i).padStart(3, '0');
+    const batchCode = `BATCH-${year}-${month}${day}-${batchNum}`;
+    
     products.push({
       id: `PROD-${String(i).padStart(5, '0')}`,
       name: `Product ${i} - ${category}`,
@@ -30,7 +37,7 @@ const generateMockProducts = (): Product[] => {
       status,
       lastUpdated: new Date().toISOString(),
       expiryDate: new Date(Date.now() + (30 + i % 335) * 24 * 60 * 60 * 1000).toISOString(),
-      storageTemp: `${Math.floor(Math.random() * 20) - 5}°C`,
+      storageTemp: batchCode,
       allergens: i % 3 === 0 ? 'None' : i % 3 === 1 ? 'Dairy' : 'Nuts',
     });
   }
