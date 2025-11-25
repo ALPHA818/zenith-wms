@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Warehouse, LogIn } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster, toast } from 'sonner';
@@ -13,6 +14,7 @@ export function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   useEffect(() => {
     // Pre-fill with admin credentials for demo purposes
@@ -23,7 +25,7 @@ export function LoginPage() {
     e.preventDefault();
     setIsLoggingIn(true);
     try {
-      await login({ name, password });
+      await login({ name, password, rememberMe });
       navigate('/');
     } catch (error: any) {
       toast.error(error.message || 'Login failed. Please check your credentials.');
@@ -70,6 +72,16 @@ export function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+              </div>
+              <div className="flex items-center space-x-2 text-left">
+                <Checkbox
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
+                <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                  Remember me
+                </Label>
               </div>
             </CardContent>
             <CardFooter>
