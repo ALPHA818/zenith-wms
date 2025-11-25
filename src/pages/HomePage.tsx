@@ -17,6 +17,7 @@ import {
   MapPin,
   MessageSquare,
   Users,
+  PackageOpen,
 } from "lucide-react";
 import { DashboardStats, Permission } from "@shared/types";
 import { api } from "@/lib/api-client";
@@ -38,6 +39,8 @@ const navCards: NavCard[] = [
   { href: "/orders", icon: ShoppingCart, label: "Orders", description: "Track and process orders" },
   { href: "/shipments", icon: Truck, label: "Shipments", description: "Monitor deliveries" },
   { href: "/locations", icon: MapPin, label: "Locations", description: "Warehouse locations", permission: 'manage:locations' },
+  { href: "/pallet-prod", icon: Package, label: "PalletProd", description: "Finished product pallets" },
+  { href: "/pallet-raw", icon: PackageOpen, label: "PalletRaw", description: "Raw material pallets" },
   { href: "/job-cards", icon: ClipboardList, label: "Job Cards", description: "Task assignments" },
   { href: "/jobs", icon: Briefcase, label: "Jobs", description: "Job management" },
   { href: "/chat", icon: MessageSquare, label: "Chat", description: "Team communication" },

@@ -13,6 +13,8 @@ import {
   MapPin,
   MessageSquare,
   Users,
+  Package,
+  PackageOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +39,8 @@ const navItems: NavItem[] = [
   { href: "/orders", icon: ShoppingCart, label: "Orders" },
   { href: "/shipments", icon: Truck, label: "Shipments" },
   { href: "/locations", icon: MapPin, label: "Locations", permission: 'manage:locations' },
+  { href: "/pallet-prod", icon: Package, label: "PalletProd" },
+  { href: "/pallet-raw", icon: PackageOpen, label: "PalletRaw" },
   { href: "/job-cards", icon: ClipboardList, label: "Job Cards" },
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
   { href: "/chat", icon: MessageSquare, label: "Chat" },
