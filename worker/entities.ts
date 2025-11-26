@@ -17,11 +17,18 @@ const generateMockPallets = (): Pallet[] => {
   const locations = ['A01S', 'B02B', 'D01A'];
   const pallets: Pallet[] = [];
   
+  // Create 25 products across pallets
+  const totalProducts = 25;
   let productCounter = 1;
+  let palletCounter = 1;
   
-  for (let i = 1; i <= 10; i++) {
-    // Each pallet has 1-5 products
-    const productsInPallet = Math.floor(Math.random() * 5) + 1;
+  while (productCounter <= totalProducts) {
+    // Each pallet has 1-2 products
+    const productsInPallet = Math.min(
+      Math.floor(Math.random() * 2) + 1,
+      totalProducts - productCounter + 1,
+      5 // max 5 products per pallet
+    );
     const palletProducts: PalletProduct[] = [];
     
     for (let j = 0; j < productsInPallet; j++) {
@@ -54,51 +61,107 @@ const generateMockPallets = (): Pallet[] => {
     const statuses: Pallet['status'][] = ['Ready', 'In Transit', 'Delivered'];
     
     pallets.push({
-      id: `PLT-PROD-${String(i).padStart(3, '0')}`,
+      id: `PLT-PROD-${String(palletCounter).padStart(3, '0')}`,
       type: 'Product',
-      locationId: locations[i % locations.length],
-      status: statuses[i % statuses.length],
+      locationId: locations[palletCounter % locations.length],
+      status: statuses[palletCounter % statuses.length],
       products: palletProducts,
       createdDate: new Date().toISOString(),
       totalQuantity,
     });
+    
+    palletCounter++;
   }
   
   return pallets;
 };
 
-const MOCK_PALLETS: Pallet[] = generateMockPallets();
+// Generate mock raw material pallets
+const generateMockRawPallets = (): Pallet[] => {
+  const rawMaterials = ['Flour', 'Sugar', 'Salt', 'Yeast', 'Cocoa Powder', 'Corn Starch', 'Baking Powder', 'Milk Powder', 'Gelatin', 'Rice'];
+  const locations = ['A01S', 'B02B', 'D01A'];
+  const pallets: Pallet[] = [];
+  
+  // Create 20 raw materials across pallets
+  const totalMaterials = 20;
+  let materialCounter = 1;
+  let palletCounter = 1;
+  
+  while (materialCounter <= totalMaterials) {
+    // Each pallet has 1-2 raw materials
+    const materialsInPallet = Math.min(
+      Math.floor(Math.random() * 2) + 1,
+      totalMaterials - materialCounter + 1,
+      5 // max 5 materials per pallet
+    );
+    const palletMaterials: PalletProduct[] = [];
+    
+    for (let j = 0; j < materialsInPallet; j++) {
+      const material = rawMaterials[materialCounter % rawMaterials.length];
+      const quantity = Math.floor(Math.random() * 1000) + 100;
+      const status: PalletProduct['status'] = quantity === 0 ? 'Out of Stock' : quantity < 200 ? 'Low Stock' : 'In Stock';
+      
+      // Generate lot number
+      const year = new Date().getFullYear();
+      const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+      const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+      const lotNum = String(materialCounter).padStart(3, '0');
+      const batchCode = `LOT-${year}-${month}${day}-${lotNum}`;
+      
+      palletMaterials.push({
+        id: `RAW-${String(materialCounter).padStart(5, '0')}`,
+        name: `${material} ${materialCounter}`,
+        category: 'Raw Material',
+        quantity,
+        status,
+        batchCode,
+        allergens: 'N/A',
+      });
+      
+      materialCounter++;
+    }
+    
+    const totalQuantity = palletMaterials.reduce((sum, p) => sum + p.quantity, 0);
+    const statuses: Pallet['status'][] = ['Ready', 'In Transit', 'Delivered'];
+    
+    pallets.push({
+      id: `PLT-RAW-${String(palletCounter).padStart(3, '0')}`,
+      type: 'Raw',
+      locationId: locations[palletCounter % locations.length],
+      status: statuses[palletCounter % statuses.length],
+      products: palletMaterials,
+      createdDate: new Date().toISOString(),
+      totalQuantity,
+    });
+    
+    palletCounter++;
+  }
+  
+  return pallets;
+};
 
-// Generate 25 test products (for backward compatibility with inventory page)
+const MOCK_PALLETS: Pallet[] = [...generateMockPallets(), ...generateMockRawPallets()];
+
+// Generate products from pallets (for backward compatibility with inventory page)
 const generateMockProducts = (): Product[] => {
-  const categories = ['Produce', 'Dairy', 'Frozen', 'Bakery', 'Beverages', 'Snacks', 'Canned Goods', 'Meat', 'Seafood', 'Pantry'];
   const products: Product[] = [];
   
-  for (let i = 1; i <= 25; i++) {
-    const category = categories[i % categories.length];
-    const quantity = Math.floor(Math.random() * 500) + 1; // Random quantity between 1-500
-    const status: Product['status'] = quantity === 0 ? 'Out of Stock' : quantity < 50 ? 'Low Stock' : 'In Stock';
-    
-    // Generate batch code in format: BATCH-YYYY-MMDD-XXX
-    const year = new Date().getFullYear();
-    const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
-    const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
-    const batchNum = String(i).padStart(3, '0');
-    const batchCode = `BATCH-${year}-${month}${day}-${batchNum}`;
-    
-    products.push({
-      id: `PROD-${String(i).padStart(5, '0')}`,
-      name: `Product ${i} - ${category}`,
-      category,
-      quantity,
-      locationId: ['A01S', 'B02B', 'D01A'][i % 3],
-      status,
-      lastUpdated: new Date().toISOString(),
-      expiryDate: new Date(Date.now() + (30 + i % 335) * 24 * 60 * 60 * 1000).toISOString(),
-      storageTemp: batchCode,
-      allergens: i % 3 === 0 ? 'None' : i % 3 === 1 ? 'Dairy' : 'Nuts',
+  MOCK_PALLETS.forEach(pallet => {
+    pallet.products.forEach(palletProduct => {
+      products.push({
+        id: palletProduct.id,
+        name: palletProduct.name,
+        category: palletProduct.category,
+        quantity: palletProduct.quantity,
+        locationId: pallet.locationId,
+        status: palletProduct.status,
+        lastUpdated: new Date().toISOString(),
+        expiryDate: palletProduct.expiryDate,
+        storageTemp: palletProduct.batchCode,
+        allergens: palletProduct.allergens,
+      });
     });
-  }
+  });
   
   return products;
 };

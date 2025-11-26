@@ -84,39 +84,45 @@ export function PalletProdPage() {
         </Card>
       ) : (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {pallets.map((pallet) => (
+          {pallets.map((pallet, index) => (
             <Card key={pallet.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">{pallet.id}</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <Package className="h-6 w-6 text-primary" />
+                    <div>
+                      <CardTitle className="text-xl">#{String(index + 1).padStart(6, '0')}</CardTitle>
+                      <p className="text-xs text-muted-foreground mt-1">{pallet.id}</p>
+                    </div>
                   </div>
                   <Badge className={getStatusColor(pallet.status)}>
                     {pallet.status}
                   </Badge>
                 </div>
-                <CardDescription className="flex items-center gap-2 mt-2">
+                <CardDescription className="flex items-center gap-2 mt-3">
                   <MapPin className="h-4 w-4" />
-                  Location: {pallet.locationId}
+                  {pallet.locationId}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  Created: {formatDate(pallet.createdDate)}
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm">
-                  <Box className="h-4 w-4" />
-                  <span className="font-semibold">Total Quantity:</span>
-                  <span>{pallet.totalQuantity.toLocaleString()} units</span>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    {formatDate(pallet.createdDate)}
+                  </div>
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Box className="h-4 w-4" />
+                    {pallet.totalQuantity.toLocaleString()} units
+                  </div>
                 </div>
 
                 <div className="pt-3 border-t">
-                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Products ({pallet.products.length})
+                  <h4 className="text-sm font-semibold mb-3 flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Stock on Pallet
+                    </span>
+                    <Badge variant="secondary">{pallet.products.length} items</Badge>
                   </h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {pallet.products.map((product) => (
