@@ -42,6 +42,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       JobCardEntity.ensureSeed(c.env),
       LocationEntity.ensureSeed(c.env),
       GroupEntity.ensureSeed(c.env),
+      PalletEntity.ensureSeed(c.env),
     ]);
     await next();
   });
