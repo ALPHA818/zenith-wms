@@ -84,14 +84,17 @@ export function PalletProdPage() {
         </Card>
       ) : (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {pallets.map((pallet, index) => (
+          {pallets.map((pallet) => {
+            // Extract number from pallet ID (e.g., PLT-000001 -> 000001)
+            const palletNumber = pallet.id.split('-').pop() || '000000';
+            return (
             <Card key={pallet.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <Package className="h-6 w-6 text-primary" />
                     <div>
-                      <CardTitle className="text-xl">#{String(index + 1).padStart(6, '0')}</CardTitle>
+                      <CardTitle className="text-xl">#{palletNumber}</CardTitle>
                       <p className="text-xs text-muted-foreground mt-1">{pallet.id}</p>
                     </div>
                   </div>
@@ -169,7 +172,8 @@ export function PalletProdPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
       
