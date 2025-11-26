@@ -94,6 +94,58 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { items } = await PalletEntity.list<typeof PalletEntity>(c.env);
     return ok(c, items as Pallet[]);
   });
+
+  wms.post('/pallets', async (c) => {
+    const body = await c.req.json();
+    // Generate a unique pallet ID
+    const { items: existingPallets } = await PalletEntity.list<typeof PalletEntity>(c.env);
+    const maxId = existingPallets.reduce((max, p) => {
+      const num = parseInt(p.id.split('-').pop() || '0');
+      return num > max ? num : max;
+    }, 0);
+    const newId = `PLT-${String(maxId + 1).padStart(6, '0')}`;
+    
+    const newPallet: Pallet = {
+      id: newId,
+      type: body.type,
+      locationId: body.locationId,
+      expiryDate: body.expiryDate,
+      monthsUntilExpiry: body.monthsUntilExpiry,
+      products: body.products,
+      createdDate: new Date().toISOString(),
+      totalQuantity: body.totalQuantity,
+    };
+    const createdPallet = await PalletEntity.create(c.env, newPallet);
+    return ok(c, createdPallet);
+  });
+
+  wms.put('/pallets/:id', async (c) => {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    
+    const palletEntity = new PalletEntity(c.env, id);
+    if (!(await palletEntity.exists())) {
+      return notFound(c, 'Pallet not found');
+    }
+    
+    const updatedPalletData: Partial<Pallet> = {
+      locationId: body.locationId,
+      expiryDate: body.expiryDate,
+      monthsUntilExpiry: body.monthsUntilExpiry,
+      products: body.products,
+      totalQuantity: body.totalQuantity,
+    };
+    await palletEntity.patch(updatedPalletData);
+    const finalPallet = await palletEntity.getState();
+    return ok(c, finalPallet);
+  });
+
+  wms.delete('/pallets/:id', async (c) => {
+    const id = c.req.param('id');
+    const existed = await PalletEntity.delete(c.env, id);
+    if (!existed) return notFound(c, 'Pallet not found');
+    return ok(c, { success: true });
+  });
   
   wms.post('/inventory', async (c) => {
     const body = await c.req.json();

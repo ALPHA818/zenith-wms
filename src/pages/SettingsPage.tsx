@@ -9,12 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, List } from "lucide-react";
 import { User, UserFormData } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserFormSheet } from "@/components/wms/UserFormSheet";
+import { PalletListDialog } from "@/components/wms/PalletListDialog";
 import { useAuthStore } from "@/stores/authStore";
 import { useIsMobile } from "@/hooks/use-mobile";
 const formatPermissionName = (permission: string) => {
@@ -31,6 +32,8 @@ export function SettingsPage() {
     const stored = localStorage.getItem('autoLogoutEnabled');
     return stored === 'true';
   });
+  const [palletListOpen, setPalletListOpen] = useState(false);
+  
   const authUser = useAuthStore((state) => state.user);
   const canManage = authUser?.permissions?.includes('manage:users') ?? false;
   const isMobile = useIsMobile();
@@ -204,6 +207,28 @@ export function SettingsPage() {
             </CardContent>
           </Card>
         )}
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Pallet Management</CardTitle>
+            <CardDescription>View and manage all warehouse pallets.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Pallet List</Label>
+                <p className="text-sm text-muted-foreground">
+                  View all pallets with their details, locations, and expiry information
+                </p>
+              </div>
+              <Button onClick={() => setPalletListOpen(true)}>
+                <List className="mr-2 h-4 w-4" />
+                View All Pallets
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
@@ -222,6 +247,9 @@ export function SettingsPage() {
       {canManage && (
         <UserFormSheet isOpen={isSheetOpen} onClose={() => setIsSheetOpen(false)} onSubmit={handleFormSubmit} user={selectedUser} />
       )}
+      
+      <PalletListDialog isOpen={palletListOpen} onClose={() => setPalletListOpen(false)} />
+      
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
