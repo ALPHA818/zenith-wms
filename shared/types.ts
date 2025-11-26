@@ -49,6 +49,30 @@ export interface Group {
   createdBy: string; // User ID
 }
 
+export type PalletStatus = 'Ready' | 'In Transit' | 'Delivered';
+export type PalletType = 'Product' | 'Raw';
+
+export interface PalletProduct {
+  id: string; // SKU
+  name: string;
+  category: string;
+  quantity: number;
+  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  expiryDate?: string; // ISO 8601 date string
+  batchCode?: string;
+  allergens?: string;
+}
+
+export interface Pallet {
+  id: string;
+  type: PalletType;
+  locationId: string;
+  status: PalletStatus;
+  products: PalletProduct[];
+  createdDate: string; // ISO 8601 date string
+  totalQuantity: number;
+}
+
 export interface Product {
   id: string; // SKU
   name: string;

@@ -1,5 +1,5 @@
 import { IndexedEntity } from "./core-utils";
-import type { Product, Order, Shipment, User, Job, JobCard, Location, Message, Group } from "@shared/types";
+import type { Product, Order, Shipment, User, Job, JobCard, Location, Message, Group, Pallet, PalletProduct } from "@shared/types";
 import { ALL_PERMISSIONS } from "@shared/types";
 // Define a type for mock users that includes the password for authentication simulation
 type MockUserWithPassword = User & { password: string };
@@ -11,7 +11,65 @@ const MOCK_LOCATIONS: Location[] = [
     { id: 'D01A', name: 'Receiving Dock A', type: 'Dock', description: 'Primary inbound dock.' },
 ];
 
-// Generate 25 test products
+// Generate mock pallets with products
+const generateMockPallets = (): Pallet[] => {
+  const categories = ['Produce', 'Dairy', 'Frozen', 'Bakery', 'Beverages', 'Snacks', 'Canned Goods', 'Meat', 'Seafood', 'Pantry'];
+  const locations = ['A01S', 'B02B', 'D01A'];
+  const pallets: Pallet[] = [];
+  
+  let productCounter = 1;
+  
+  for (let i = 1; i <= 10; i++) {
+    // Each pallet has 1-5 products
+    const productsInPallet = Math.floor(Math.random() * 5) + 1;
+    const palletProducts: PalletProduct[] = [];
+    
+    for (let j = 0; j < productsInPallet; j++) {
+      const category = categories[productCounter % categories.length];
+      const quantity = Math.floor(Math.random() * 500) + 1;
+      const status: PalletProduct['status'] = quantity === 0 ? 'Out of Stock' : quantity < 50 ? 'Low Stock' : 'In Stock';
+      
+      // Generate batch code
+      const year = new Date().getFullYear();
+      const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+      const day = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
+      const batchNum = String(productCounter).padStart(3, '0');
+      const batchCode = `BATCH-${year}-${month}${day}-${batchNum}`;
+      
+      palletProducts.push({
+        id: `PROD-${String(productCounter).padStart(5, '0')}`,
+        name: `Product ${productCounter} - ${category}`,
+        category,
+        quantity,
+        status,
+        expiryDate: new Date(Date.now() + (30 + productCounter % 335) * 24 * 60 * 60 * 1000).toISOString(),
+        batchCode,
+        allergens: productCounter % 3 === 0 ? 'None' : productCounter % 3 === 1 ? 'Dairy' : 'Nuts',
+      });
+      
+      productCounter++;
+    }
+    
+    const totalQuantity = palletProducts.reduce((sum, p) => sum + p.quantity, 0);
+    const statuses: Pallet['status'][] = ['Ready', 'In Transit', 'Delivered'];
+    
+    pallets.push({
+      id: `PLT-PROD-${String(i).padStart(3, '0')}`,
+      type: 'Product',
+      locationId: locations[i % locations.length],
+      status: statuses[i % statuses.length],
+      products: palletProducts,
+      createdDate: new Date().toISOString(),
+      totalQuantity,
+    });
+  }
+  
+  return pallets;
+};
+
+const MOCK_PALLETS: Pallet[] = generateMockPallets();
+
+// Generate 25 test products (for backward compatibility with inventory page)
 const generateMockProducts = (): Product[] => {
   const categories = ['Produce', 'Dairy', 'Frozen', 'Bakery', 'Beverages', 'Snacks', 'Canned Goods', 'Meat', 'Seafood', 'Pantry'];
   const products: Product[] = [];
@@ -126,4 +184,19 @@ export class GroupEntity extends IndexedEntity<Group> {
     static readonly indexName = "groups";
     static readonly initialState: Group = { id: "", name: "", description: "", memberIds: [], createdAt: "", createdBy: "" };
     static seedData: Group[] = [];
+}
+
+export class PalletEntity extends IndexedEntity<Pallet> {
+    static readonly entityName = "pallet";
+    static readonly indexName = "pallets";
+    static readonly initialState: Pallet = { 
+      id: "", 
+      type: 'Product', 
+      locationId: "", 
+      status: 'Ready', 
+      products: [], 
+      createdDate: "", 
+      totalQuantity: 0 
+    };
+    static seedData = MOCK_PALLETS;
 }
