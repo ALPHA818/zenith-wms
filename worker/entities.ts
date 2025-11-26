@@ -11,16 +11,18 @@ const MOCK_LOCATIONS: Location[] = [
     { id: 'D01A', name: 'Receiving Dock A', type: 'Dock', description: 'Primary inbound dock.' },
 ];
 
-// Generate mock pallets with products
-const generateMockPallets = (): Pallet[] => {
+// Generate mock pallets with products and raw materials
+const generateAllPallets = (): Pallet[] => {
   const categories = ['Produce', 'Dairy', 'Frozen', 'Bakery', 'Beverages', 'Snacks', 'Canned Goods', 'Meat', 'Seafood', 'Pantry'];
+  const rawMaterials = ['Flour', 'Sugar', 'Salt', 'Yeast', 'Cocoa Powder', 'Corn Starch', 'Baking Powder', 'Milk Powder', 'Gelatin', 'Rice'];
   const locations = ['A01S', 'B02B', 'D01A'];
   const pallets: Pallet[] = [];
   
-  // Create 25 products across pallets
+  let globalPalletCounter = 1;
+  
+  // Create 25 finished products across pallets
   const totalProducts = 25;
   let productCounter = 1;
-  let palletCounter = 1;
   
   while (productCounter <= totalProducts) {
     // Each pallet has 1-2 products
@@ -61,31 +63,21 @@ const generateMockPallets = (): Pallet[] => {
     const statuses: Pallet['status'][] = ['Ready', 'In Transit', 'Delivered'];
     
     pallets.push({
-      id: `PLT-PROD-${String(palletCounter).padStart(3, '0')}`,
+      id: `PLT-${String(globalPalletCounter).padStart(6, '0')}`,
       type: 'Product',
-      locationId: locations[palletCounter % locations.length],
-      status: statuses[palletCounter % statuses.length],
+      locationId: locations[globalPalletCounter % locations.length],
+      status: statuses[globalPalletCounter % statuses.length],
       products: palletProducts,
       createdDate: new Date().toISOString(),
       totalQuantity,
     });
     
-    palletCounter++;
+    globalPalletCounter++;
   }
-  
-  return pallets;
-};
-
-// Generate mock raw material pallets
-const generateMockRawPallets = (): Pallet[] => {
-  const rawMaterials = ['Flour', 'Sugar', 'Salt', 'Yeast', 'Cocoa Powder', 'Corn Starch', 'Baking Powder', 'Milk Powder', 'Gelatin', 'Rice'];
-  const locations = ['A01S', 'B02B', 'D01A'];
-  const pallets: Pallet[] = [];
   
   // Create 20 raw materials across pallets
   const totalMaterials = 20;
   let materialCounter = 1;
-  let palletCounter = 1;
   
   while (materialCounter <= totalMaterials) {
     // Each pallet has 1-2 raw materials
@@ -125,22 +117,22 @@ const generateMockRawPallets = (): Pallet[] => {
     const statuses: Pallet['status'][] = ['Ready', 'In Transit', 'Delivered'];
     
     pallets.push({
-      id: `PLT-RAW-${String(palletCounter).padStart(3, '0')}`,
+      id: `PLT-${String(globalPalletCounter).padStart(6, '0')}`,
       type: 'Raw',
-      locationId: locations[palletCounter % locations.length],
-      status: statuses[palletCounter % statuses.length],
+      locationId: locations[globalPalletCounter % locations.length],
+      status: statuses[globalPalletCounter % statuses.length],
       products: palletMaterials,
       createdDate: new Date().toISOString(),
       totalQuantity,
     });
     
-    palletCounter++;
+    globalPalletCounter++;
   }
   
   return pallets;
 };
 
-const MOCK_PALLETS: Pallet[] = [...generateMockPallets(), ...generateMockRawPallets()];
+const MOCK_PALLETS: Pallet[] = generateAllPallets();
 
 // Generate products from pallets (for backward compatibility with inventory page)
 const generateMockProducts = (): Product[] => {
