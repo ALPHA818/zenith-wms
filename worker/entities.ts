@@ -60,13 +60,18 @@ const generateAllPallets = (): Pallet[] => {
     }
     
     const totalQuantity = palletProducts.reduce((sum, p) => sum + p.quantity, 0);
-    const statuses: Pallet['status'][] = ['Ready', 'In Transit', 'Delivered'];
+    
+    // Generate random expiry date (1-24 months from now)
+    const monthsUntilExpiry = Math.floor(Math.random() * 24) + 1;
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + monthsUntilExpiry);
     
     pallets.push({
       id: `PLT-${String(globalPalletCounter).padStart(6, '0')}`,
       type: 'Product',
       locationId: locations[globalPalletCounter % locations.length],
-      status: statuses[globalPalletCounter % statuses.length],
+      expiryDate: expiryDate.toISOString(),
+      monthsUntilExpiry,
       products: palletProducts,
       createdDate: new Date().toISOString(),
       totalQuantity,
@@ -114,13 +119,18 @@ const generateAllPallets = (): Pallet[] => {
     }
     
     const totalQuantity = palletMaterials.reduce((sum, p) => sum + p.quantity, 0);
-    const statuses: Pallet['status'][] = ['Ready', 'In Transit', 'Delivered'];
+    
+    // Generate random expiry date (6-36 months from now for raw materials)
+    const monthsUntilExpiry = Math.floor(Math.random() * 31) + 6;
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + monthsUntilExpiry);
     
     pallets.push({
       id: `PLT-${String(globalPalletCounter).padStart(6, '0')}`,
       type: 'Raw',
       locationId: locations[globalPalletCounter % locations.length],
-      status: statuses[globalPalletCounter % statuses.length],
+      expiryDate: expiryDate.toISOString(),
+      monthsUntilExpiry,
       products: palletMaterials,
       createdDate: new Date().toISOString(),
       totalQuantity,
@@ -248,7 +258,8 @@ export class PalletEntity extends IndexedEntity<Pallet> {
       id: "", 
       type: 'Product', 
       locationId: "", 
-      status: 'Ready', 
+      expiryDate: undefined,
+      monthsUntilExpiry: 0,
       products: [], 
       createdDate: "", 
       totalQuantity: 0 

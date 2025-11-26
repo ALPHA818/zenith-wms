@@ -4,33 +4,121 @@ import { PageHeader } from "@/components/wms/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PackageOpen, MapPin, Calendar, Box } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { PackageOpen, MapPin, Calendar, Box, Plus, MoreVertical, Edit, Trash, Clock, List } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Pallet } from "@shared/types";
 import { Toaster, toast } from "sonner";
+import { PalletFormSheet } from "@/components/wms/PalletFormSheet";
+import { PalletListDialog } from "@/components/wms/PalletListDialog";
 
 export function PalletRawPage() {
   const [pallets, setPallets] = useState<Pallet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedPallet, setSelectedPallet] = useState<Pallet | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [palletToDelete, setPalletToDelete] = useState<Pallet | null>(null);
+  const [palletListOpen, setPalletListOpen] = useState(false);
+
+  const fetchPallets = async () => {
+    try {
+      setLoading(true);
+      const data = await api<Pallet[]>('/api/wms/pallets');
+      // Filter for Raw type pallets only
+      const rawPallets = data.filter(p => p.type === 'Raw');
+      setPallets(rawPallets);
+    } catch (error) {
+      toast.error("Failed to load raw material pallet data.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPallets = async () => {
-      try {
-        setLoading(true);
-        const data = await api<Pallet[]>('/api/wms/pallets');
-        // Filter for Raw type pallets only
-        const rawPallets = data.filter(p => p.type === 'Raw');
-        setPallets(rawPallets);
-      } catch (error) {
-        toast.error("Failed to load raw material pallet data.");
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchPallets();
   }, []);
+
+  const handleCreatePallet = () => {
+    setSelectedPallet(null);
+    setFormOpen(true);
+  };
+
+  const handleEditPallet = (pallet: Pallet) => {
+    setSelectedPallet(pallet);
+    setFormOpen(true);
+  };
+
+  const handleEmptyPallet = (pallet: Pallet) => {
+    setPalletToDelete(pallet);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleSubmitPallet = async (palletData: Partial<Pallet>) => {
+    try {
+      if (selectedPallet) {
+        // Update existing pallet
+        await api(`/api/wms/pallets/${selectedPallet.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(palletData),
+        });
+        toast.success("Pallet updated successfully!");
+      } else {
+        // Create new pallet
+        await api('/api/wms/pallets', {
+          method: 'POST',
+          body: JSON.stringify(palletData),
+        });
+        toast.success("Pallet created successfully!");
+      }
+      fetchPallets();
+    } catch (error) {
+      toast.error("Failed to save pallet.");
+      throw error;
+    }
+  };
+
+  const confirmEmptyPallet = async () => {
+    if (!palletToDelete) return;
+    
+    try {
+      // Empty the pallet by updating it with empty products array
+      await api(`/api/wms/pallets/${palletToDelete.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          locationId: palletToDelete.locationId,
+          expiryDate: palletToDelete.expiryDate,
+          monthsUntilExpiry: palletToDelete.monthsUntilExpiry,
+          products: [],
+          totalQuantity: 0,
+        }),
+      });
+      toast.success("Pallet emptied successfully!");
+      fetchPallets();
+    } catch (error) {
+      toast.error("Failed to empty pallet.");
+    } finally {
+      setDeleteDialogOpen(false);
+      setPalletToDelete(null);
+    }
+  };
 
   const getStatusColor = (status: Pallet['status']) => {
     switch (status) {
@@ -55,10 +143,22 @@ export function PalletRawPage() {
 
   return (
     <AppLayout container>
-      <PageHeader 
-        title="PalletRaw" 
-        subtitle="Manage raw material pallets in receiving and storage." 
-      />
+      <div className="flex items-center justify-between mb-6">
+        <PageHeader 
+          title="PalletRaw" 
+          subtitle="Manage raw material pallets in receiving and storage." 
+        />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setPalletListOpen(true)}>
+            <List className="h-4 w-4 mr-2" />
+            View All Pallets
+          </Button>
+          <Button onClick={handleCreatePallet}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Pallet
+          </Button>
+        </div>
+      </div>
       
       {loading ? (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -98,14 +198,52 @@ export function PalletRawPage() {
                       <p className="text-xs text-muted-foreground mt-1">{pallet.id}</p>
                     </div>
                   </div>
-                  <Badge className={getStatusColor(pallet.status)}>
-                    {pallet.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {pallet.monthsUntilExpiry !== undefined && pallet.monthsUntilExpiry !== null && (
+                      <>
+                        <Badge variant={pallet.monthsUntilExpiry <= 6 ? "destructive" : pallet.monthsUntilExpiry === 7 ? "secondary" : "default"} className={pallet.monthsUntilExpiry > 8 ? "bg-green-600 hover:bg-green-700" : ""}>
+                          <Clock className="h-3 w-3 mr-1" />
+                          {pallet.monthsUntilExpiry}mo
+                        </Badge>
+                        {pallet.monthsUntilExpiry === 7 && (
+                          <Badge variant="outline" className="border-orange-500 text-orange-700">
+                            Notify QC/QA
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditPallet(pallet)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Pallet
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleEmptyPallet(pallet)}
+                          className="text-destructive"
+                        >
+                          <Trash className="h-4 w-4 mr-2" />
+                          Empty Pallet
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
                 <CardDescription className="flex items-center gap-2 mt-3">
                   <MapPin className="h-4 w-4" />
                   {pallet.locationId}
                 </CardDescription>
+                {pallet.expiryDate && (
+                  <CardDescription className="flex items-center gap-2 mt-1">
+                    <Calendar className="h-4 w-4" />
+                    Expires: {formatDate(pallet.expiryDate)}
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
@@ -162,6 +300,33 @@ export function PalletRawPage() {
           })}
         </div>
       )}
+      
+      <PalletFormSheet
+        isOpen={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleSubmitPallet}
+        pallet={selectedPallet}
+        palletType="Raw"
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Empty this pallet?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove all items from pallet {palletToDelete?.id}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmEmptyPallet} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Empty Pallet
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <PalletListDialog isOpen={palletListOpen} onClose={() => setPalletListOpen(false)} />
       
       <Toaster richColors />
     </AppLayout>

@@ -67,7 +67,8 @@ export interface Pallet {
   id: string;
   type: PalletType;
   locationId: string;
-  status: PalletStatus;
+  expiryDate?: string; // ISO 8601 date string - overall pallet expiry
+  monthsUntilExpiry?: number; // Calculated months until expiry
   products: PalletProduct[];
   createdDate: string; // ISO 8601 date string
   totalQuantity: number;
