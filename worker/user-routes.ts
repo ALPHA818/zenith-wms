@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
+import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, PalletEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema } from "@shared/types";
+import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema, Pallet } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- AUTH ROUTES ---
   const auth = new Hono<{ Bindings: Env }>();
@@ -87,6 +87,13 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const { items } = await ProductEntity.list<typeof ProductEntity>(c.env);
     return ok(c, items as Product[]);
   });
+  
+  // --- PALLET CRUD ---
+  wms.get('/pallets', async (c) => {
+    const { items } = await PalletEntity.list<typeof PalletEntity>(c.env);
+    return ok(c, items as Pallet[]);
+  });
+  
   wms.post('/inventory', async (c) => {
     const body = await c.req.json();
     const validation = productSchema.safeParse(body);

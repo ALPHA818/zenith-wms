@@ -4,19 +4,10 @@ import { PageHeader } from "@/components/wms/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, MapPin, Calendar, Thermometer, AlertTriangle, Box } from "lucide-react";
+import { Package, MapPin, Calendar, AlertTriangle, Box } from "lucide-react";
 import { api } from "@/lib/api-client";
-import { Product } from "@shared/types";
+import { Pallet } from "@shared/types";
 import { Toaster, toast } from "sonner";
-
-interface Pallet {
-  id: string;
-  products: Product[];
-  location: string;
-  createdDate: string;
-  totalQuantity: number;
-  status: 'Ready' | 'In Transit' | 'Delivered';
-}
 
 export function PalletProdPage() {
   const [pallets, setPallets] = useState<Pallet[]>([]);
@@ -26,37 +17,10 @@ export function PalletProdPage() {
     const fetchPallets = async () => {
       try {
         setLoading(true);
-        // Fetch all products and group them into pallets
-        const products = await api<Product[]>('/api/wms/inventory');
-        
-        // Create pallets with 1-5 products each (randomly distributed)
-        const palletData: Pallet[] = [];
-        let productIndex = 0;
-        let palletCounter = 1;
-        
-        while (productIndex < products.length) {
-          // Randomly choose 1-5 products per pallet (or remaining products if less than 5)
-          const remainingProducts = products.length - productIndex;
-          const productsInThisPallet = Math.min(
-            Math.floor(Math.random() * 5) + 1, // Random number between 1-5
-            remainingProducts
-          );
-          
-          const palletProducts = products.slice(productIndex, productIndex + productsInThisPallet);
-          palletData.push({
-            id: `PLT-PROD-${String(palletCounter).padStart(3, '0')}`,
-            products: palletProducts,
-            location: palletProducts[0]?.locationId || 'Unknown',
-            createdDate: new Date().toISOString(),
-            totalQuantity: palletProducts.reduce((sum, p) => sum + p.quantity, 0),
-            status: palletCounter % 3 === 0 ? 'Ready' : palletCounter % 3 === 1 ? 'In Transit' : 'Delivered',
-          });
-          
-          productIndex += productsInThisPallet;
-          palletCounter++;
-        }
-        
-        setPallets(palletData);
+        const data = await api<Pallet[]>('/api/wms/pallets');
+        // Filter for Product type pallets only
+        const productPallets = data.filter(p => p.type === 'Product');
+        setPallets(productPallets);
       } catch (error) {
         toast.error("Failed to load pallet data.");
         console.error(error);
@@ -134,7 +98,7 @@ export function PalletProdPage() {
                 </div>
                 <CardDescription className="flex items-center gap-2 mt-2">
                   <MapPin className="h-4 w-4" />
-                  Location: {pallet.location}
+                  Location: {pallet.locationId}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -173,10 +137,10 @@ export function PalletProdPage() {
                           <span>{product.category}</span>
                         </div>
 
-                        {product.storageTemp && (
+                        {product.batchCode && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Box className="h-3 w-3" />
-                            Batch: {product.storageTemp}
+                            Batch: {product.batchCode}
                           </div>
                         )}
 
