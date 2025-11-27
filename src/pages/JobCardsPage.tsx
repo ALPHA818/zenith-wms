@@ -11,42 +11,68 @@ import { Job, JobCard, JobCardStatus, JobCardFormData } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, FileText, Upload } from "lucide-react";
 import { JobCardFormSheet } from "@/components/wms/JobCardFormSheet";
+import { JobCardActionDialog } from "@/components/wms/JobCardActionDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-const KANBAN_COLUMNS: JobCardStatus[] = ["To Do", "In Progress", "Done"];
-const SortableJobCard = ({ card, onEdit, onDelete }: { card: JobCard, onEdit: (card: JobCard) => void, onDelete: (card: JobCard) => void }) => {
+const KANBAN_COLUMNS: JobCardStatus[] = ["To Do", "In Progress", "Awaiting QC", "Done"];
+const SortableJobCard = ({ card, onEdit, onDelete, onViewActions }: { card: JobCard, onEdit: (card: JobCard) => void, onDelete: (card: JobCard) => void, onViewActions: (card: JobCard) => void }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: card.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
+  
+  const hasDocument = !!card.documentUrl;
+  const needsAction = (card.status === 'In Progress' && !hasDocument) || card.status === 'Awaiting QC';
+  
   return (
     <Card ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-4 bg-card touch-none">
       <CardHeader className="p-4 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-medium">{card.title}</CardTitle>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
+        <div className="flex-1">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            {card.title}
+            {hasDocument && <FileText className="h-4 w-4 text-muted-foreground" />}
+          </CardTitle>
+          {card.orderId && (
+            <p className="text-xs text-muted-foreground mt-1">Order: {card.orderId}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {needsAction && (
+            <Button 
+              variant={card.status === 'Awaiting QC' ? "default" : "outline"} 
+              size="sm" 
+              onClick={(e) => { e.stopPropagation(); onViewActions(card); }}
+            >
+              <Upload className="h-3 w-3 mr-1" />
+              {card.status === 'Awaiting QC' ? 'Review' : 'Upload'}
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(card)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete(card)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onViewActions(card)}><FileText className="mr-2 h-4 w-4" />View Details</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onEdit(card)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(card)} className="text-destructive focus:text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
       {card.description && <CardContent className="p-4 pt-0 text-sm text-muted-foreground">{card.description}</CardContent>}
     </Card>
   );
 };
-const KanbanColumn = ({ title, cards, onEdit, onDelete }: { title: string, cards: JobCard[], onEdit: (card: JobCard) => void, onDelete: (card: JobCard) => void }) => {
+const KanbanColumn = ({ title, cards, onEdit, onDelete, onViewActions }: { title: string, cards: JobCard[], onEdit: (card: JobCard) => void, onDelete: (card: JobCard) => void, onViewActions: (card: JobCard) => void }) => {
   const { setNodeRef } = useSortable({ id: title });
   return (
     <div ref={setNodeRef} className="flex-1 min-w-[300px] bg-muted/50 rounded-lg p-4">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-        {cards.map(card => <SortableJobCard key={card.id} card={card} onEdit={onEdit} onDelete={onDelete} />)}
+        {cards.map(card => <SortableJobCard key={card.id} card={card} onEdit={onEdit} onDelete={onDelete} onViewActions={onViewActions} />)}
       </SortableContext>
     </div>
   );
@@ -60,6 +86,8 @@ export function JobCardsPage() {
   const [selectedCard, setSelectedCard] = useState<JobCard | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<JobCard | null>(null);
+  const [isActionDialogOpen, setIsActionDialogOpen] = useState(false);
+  const [cardForAction, setCardForAction] = useState<JobCard | null>(null);
   const user = useAuthStore((state) => state.user);
   const canManage = user?.permissions.includes('manage:job-cards') ?? false;
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -119,6 +147,7 @@ export function JobCardsPage() {
   const handleAddCard = () => { setSelectedCard(null); setIsSheetOpen(true); };
   const handleEditCard = (card: JobCard) => { setSelectedCard(card); setIsSheetOpen(true); };
   const handleDeleteClick = (card: JobCard) => { setCardToDelete(card); setIsDeleteDialogOpen(true); };
+  const handleViewActions = (card: JobCard) => { setCardForAction(card); setIsActionDialogOpen(true); };
   const handleConfirmDelete = async () => {
     if (!cardToDelete) return;
     try {
@@ -178,7 +207,7 @@ export function JobCardsPage() {
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <div className="flex gap-6 flex-1 overflow-x-auto pb-4">
             {columns.map(({ id, cards }) => (
-              <KanbanColumn key={id} title={id} cards={cards} onEdit={handleEditCard} onDelete={handleDeleteClick} />
+              <KanbanColumn key={id} title={id} cards={cards} onEdit={handleEditCard} onDelete={handleDeleteClick} onViewActions={handleViewActions} />
             ))}
           </div>
         </DndContext>
@@ -205,6 +234,12 @@ export function JobCardsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <JobCardActionDialog 
+        card={cardForAction} 
+        isOpen={isActionDialogOpen} 
+        onClose={() => setIsActionDialogOpen(false)} 
+        onUpdate={() => fetchCards(selectedJobId)} 
+      />
       <Toaster richColors />
     </AppLayout>
   );
