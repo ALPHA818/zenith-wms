@@ -21,10 +21,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Package, MapPin, Calendar, AlertTriangle, Box, Plus, MoreVertical, Edit, Trash, Clock, List } from "lucide-react";
+import { Package, MapPin, Calendar, AlertTriangle, Box, Plus, MoreVertical, Edit, Trash, Clock, List, Search } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Pallet } from "@shared/types";
 import { Toaster, toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import { PalletFormSheet } from "@/components/wms/PalletFormSheet";
 import { PalletListDialog } from "@/components/wms/PalletListDialog";
 
@@ -36,6 +37,7 @@ export function PalletProdPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [palletToDelete, setPalletToDelete] = useState<Pallet | null>(null);
   const [palletListOpen, setPalletListOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchPallets = async () => {
     try {
@@ -141,22 +143,49 @@ export function PalletProdPage() {
     });
   };
 
+  // Filter pallets based on search query
+  const filteredPallets = pallets.filter((pallet) => {
+    const query = searchQuery.toLowerCase();
+    const palletNumber = pallet.id.split('-').pop() || '';
+    return (
+      pallet.id.toLowerCase().includes(query) ||
+      palletNumber.includes(query) ||
+      pallet.locationId.toLowerCase().includes(query) ||
+      pallet.products.some(p => 
+        p.name.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query) ||
+        p.batchCode?.toLowerCase().includes(query)
+      )
+    );
+  });
+
   return (
     <AppLayout container>
-      <div className="flex items-center justify-between mb-6">
-        <PageHeader 
-          title="PalletProd" 
-          subtitle="Manage finished product pallets ready for distribution." 
-        />
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setPalletListOpen(true)}>
-            <List className="h-4 w-4 mr-2" />
-            View All Pallets
-          </Button>
-          <Button onClick={handleCreatePallet}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Pallet
-          </Button>
+      <div className="space-y-4 mb-6">
+        <div className="flex items-center justify-between">
+          <PageHeader 
+            title="PalletProd" 
+            subtitle="Manage finished product pallets ready for distribution." 
+          />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setPalletListOpen(true)}>
+              <List className="h-4 w-4 mr-2" />
+              View All Pallets
+            </Button>
+            <Button onClick={handleCreatePallet}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Pallet
+            </Button>
+          </div>
+        </div>
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by pallet ID, location, product name, or batch code..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
       
@@ -176,15 +205,15 @@ export function PalletProdPage() {
             </Card>
           ))}
         </div>
-      ) : pallets.length === 0 ? (
+      ) : filteredPallets.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12 text-muted-foreground">
-            No pallets found. Add products to create pallets.
+            {searchQuery ? `No pallets found matching "${searchQuery}"` : "No pallets found. Add products to create pallets."}
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {pallets.map((pallet) => {
+          {filteredPallets.map((pallet) => {
             // Extract number from pallet ID (e.g., PLT-000001 -> 000001)
             const palletNumber = pallet.id.split('-').pop() || '000000';
             return (

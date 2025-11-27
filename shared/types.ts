@@ -15,6 +15,7 @@ export const ALL_PERMISSIONS = [
   'manage:job-cards',
   'manage:locations',
   'manage:location-ids',
+  'manage:qc',
 ] as const;
 export type Permission = typeof ALL_PERMISSIONS[number];
 export interface User {
@@ -132,13 +133,21 @@ export interface OrderTrendItem {
   count: number;
 }
 // Job & JobCard Types
-export type JobCardStatus = 'To Do' | 'In Progress' | 'Done';
+export type JobCardStatus = 'To Do' | 'In Progress' | 'Awaiting QC' | 'Done';
 export interface JobCard {
   id: string;
   jobId: string;
+  orderId?: string; // Link to order if created from order
   title: string;
   description?: string;
   status: JobCardStatus;
+  documentUrl?: string; // Employee uploaded document
+  documentUploadedAt?: string; // When document was uploaded
+  documentUploadedBy?: string; // User ID who uploaded
+  qcApproved?: boolean; // QC approval status
+  qcApprovedAt?: string; // When QC approved
+  qcApprovedBy?: string; // User ID who approved
+  qcNotes?: string; // QC notes/comments
 }
 export type JobStatus = 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
 export interface Job {
@@ -225,9 +234,17 @@ export type JobFormData = z.infer<typeof jobSchema>;
 export const jobCardSchema = z.object({
   id: z.string().min(1, "Card ID is required"),
   jobId: z.string().min(1, "Associated Job ID is required"),
+  orderId: z.string().optional(),
   title: z.string().min(3, "Title must be at least 3 characters"),
   description: z.string().optional(),
-  status: z.enum(['To Do', 'In Progress', 'Done']),
+  status: z.enum(['To Do', 'In Progress', 'Awaiting QC', 'Done']),
+  documentUrl: z.string().optional(),
+  documentUploadedAt: z.string().optional(),
+  documentUploadedBy: z.string().optional(),
+  qcApproved: z.boolean().optional(),
+  qcApprovedAt: z.string().optional(),
+  qcApprovedBy: z.string().optional(),
+  qcNotes: z.string().optional(),
 });
 export type JobCardFormData = z.infer<typeof jobCardSchema>;
 // Zod Schema for Location Validation

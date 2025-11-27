@@ -207,6 +207,42 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const total = itemCount * 50.25; // Mock total calculation
     const newOrder: Order = { id, type, customerName, items, status: 'Pending', date: new Date().toISOString(), itemCount, total };
     const createdOrder = await OrderEntity.create(c.env, newOrder);
+    
+    // Automatically create a Job and JobCard for this order
+    const { items: existingJobs } = await JobEntity.list<typeof JobEntity>(c.env);
+    const maxJobId = existingJobs.reduce((max, j) => {
+      const num = parseInt(j.id.replace('JOB-', ''));
+      return num > max ? num : max;
+    }, 0);
+    const jobId = `JOB-${String(maxJobId + 1).padStart(4, '0')}`;
+    
+    const newJob: Job = {
+      id: jobId,
+      customerName: customerName,
+      description: `${type} Order ${id} - ${itemCount} items`,
+      status: 'Not Started',
+      startDate: new Date().toISOString(),
+    };
+    await JobEntity.create(c.env, newJob);
+    
+    // Create job card for the order
+    const { items: existingCards } = await JobCardEntity.list<typeof JobCardEntity>(c.env);
+    const maxCardId = existingCards.reduce((max, c) => {
+      const num = parseInt(c.id.replace('CARD-', ''));
+      return num > max ? num : max;
+    }, 0);
+    const cardId = `CARD-${String(maxCardId + 1).padStart(4, '0')}`;
+    
+    const newCard: JobCard = {
+      id: cardId,
+      jobId: jobId,
+      orderId: id,
+      title: `Order ${id} - ${customerName}`,
+      description: `Process ${type.toLowerCase()} order with ${itemCount} items`,
+      status: 'To Do',
+    };
+    await JobCardEntity.create(c.env, newCard);
+    
     return ok(c, createdOrder);
   });
   wms.put('/orders/:id', async (c) => {
@@ -468,6 +504,68 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!existed) return notFound(c, 'Job Card not found');
     return ok(c, { success: true });
   });
+
+  // Upload document to job card (employee action)
+  wms.post('/job-cards/:id/upload-document', async (c) => {
+    const id = c.req.param('id');
+    const { documentUrl, userId, userName } = await c.req.json<{ documentUrl: string; userId: string; userName: string }>();
+    
+    if (!documentUrl) {
+      return bad(c, 'Document URL is required');
+    }
+    
+    const cardEntity = new JobCardEntity(c.env, id);
+    if (!(await cardEntity.exists())) {
+      return notFound(c, 'Job Card not found');
+    }
+    
+    await cardEntity.patch({
+      documentUrl,
+      documentUploadedAt: new Date().toISOString(),
+      documentUploadedBy: userId,
+      status: 'Awaiting QC' as JobCardStatus,
+    });
+    
+    const updatedCard = await cardEntity.getState();
+    return ok(c, updatedCard);
+  });
+
+  // QC approval (QC personnel action)
+  wms.post('/job-cards/:id/qc-approve', async (c) => {
+    const id = c.req.param('id');
+    const { approved, notes, userId } = await c.req.json<{ approved: boolean; notes?: string; userId: string }>();
+    
+    const cardEntity = new JobCardEntity(c.env, id);
+    if (!(await cardEntity.exists())) {
+      return notFound(c, 'Job Card not found');
+    }
+    
+    const card = await cardEntity.getState();
+    if (!card.documentUrl) {
+      return bad(c, 'No document has been uploaded for this job card');
+    }
+    
+    if (approved) {
+      await cardEntity.patch({
+        qcApproved: true,
+        qcApprovedAt: new Date().toISOString(),
+        qcApprovedBy: userId,
+        qcNotes: notes,
+        status: 'Done' as JobCardStatus,
+      });
+    } else {
+      // If not approved, send back to In Progress
+      await cardEntity.patch({
+        qcApproved: false,
+        qcNotes: notes,
+        status: 'In Progress' as JobCardStatus,
+      });
+    }
+    
+    const updatedCard = await cardEntity.getState();
+    return ok(c, updatedCard);
+  });
+
   // --- LOCATIONS CRUD ---
   wms.get('/locations', async (c) => {
     const { items } = await LocationEntity.list<typeof LocationEntity>(c.env);

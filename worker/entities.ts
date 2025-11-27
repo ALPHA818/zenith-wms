@@ -227,7 +227,21 @@ export class JobEntity extends IndexedEntity<Job> {
 export class JobCardEntity extends IndexedEntity<JobCard> {
     static readonly entityName = "jobcard";
     static readonly indexName = "jobcards";
-    static readonly initialState: JobCard = { id: "", jobId: "", title: "", description: "", status: 'To Do' };
+    static readonly initialState: JobCard = { 
+      id: "", 
+      jobId: "", 
+      orderId: undefined,
+      title: "", 
+      description: "", 
+      status: 'To Do',
+      documentUrl: undefined,
+      documentUploadedAt: undefined,
+      documentUploadedBy: undefined,
+      qcApproved: undefined,
+      qcApprovedAt: undefined,
+      qcApprovedBy: undefined,
+      qcNotes: undefined,
+    };
     static seedData = MOCK_JOB_CARDS;
 }
 export class LocationEntity extends IndexedEntity<Location> {
