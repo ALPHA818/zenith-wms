@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { JobCard } from "@shared/types";
-import { Upload, CheckCircle, XCircle, FileText, Calendar, User } from "lucide-react";
+import { Upload, CheckCircle, XCircle, FileText, Calendar, User, Image as ImageIcon, File, X } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
@@ -23,14 +23,67 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
   const canQC = user?.permissions.includes('manage:qc') ?? false;
   
   const [documentUrl, setDocumentUrl] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [qcNotes, setQcNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!card) return null;
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    setUploadedFile(file);
+
+    // Create preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setPreviewUrl("");
+    }
+
+    // Clear the URL input when a file is selected
+    setDocumentUrl("");
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    setPreviewUrl("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleUploadDocument = async () => {
-    if (!documentUrl.trim()) {
-      toast.error("Please enter a document URL");
+    // In a real app, you would upload the file to cloud storage (S3, etc.)
+    // For now, we'll simulate it by creating a data URL or using the URL input
+    let finalUrl = documentUrl.trim();
+
+    if (uploadedFile) {
+      // Simulate file upload - in production, upload to storage service
+      if (uploadedFile.type.startsWith('image/')) {
+        // For images, use the data URL as a demo
+        finalUrl = previewUrl;
+      } else {
+        // For other files, create a mock URL
+        finalUrl = `file://${uploadedFile.name}`;
+      }
+    }
+
+    if (!finalUrl) {
+      toast.error("Please provide a document URL or upload a file");
       return;
     }
 
@@ -39,7 +92,7 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
       await api(`/api/wms/job-cards/${card.id}/upload-document`, {
         method: 'POST',
         body: JSON.stringify({
-          documentUrl: documentUrl.trim(),
+          documentUrl: finalUrl,
           userId: user?.id,
           userName: user?.name,
         }),
@@ -48,6 +101,8 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
       onUpdate();
       onClose();
       setDocumentUrl("");
+      setUploadedFile(null);
+      setPreviewUrl("");
     } catch (error) {
       toast.error("Failed to upload document");
       console.error(error);
@@ -73,7 +128,7 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
       setQcNotes("");
     } catch (error) {
       toast.error("Failed to process QC approval");
-      console.error(error);
+      setQcNotes("");
     } finally {
       setIsSubmitting(false);
     }
@@ -88,6 +143,12 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const isImage = (url?: string) => {
+    if (!url) return false;
+    return url.startsWith('data:image/') || 
+           /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
   };
 
   // Show document upload interface for In Progress cards without documents
@@ -131,19 +192,93 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
             <div className="space-y-4 border rounded-lg p-4 bg-muted/50">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Upload className="h-4 w-4" />
-                Upload Confirmation Document
+                Upload Confirmation Document or Image
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="documentUrl">Document URL</Label>
-                <Input
-                  id="documentUrl"
-                  placeholder="https://example.com/document.pdf or file path"
-                  value={documentUrl}
-                  onChange={(e) => setDocumentUrl(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Enter the URL or file path to the completed work document
-                </p>
+              
+              <div className="space-y-4">
+                {/* File Upload */}
+                <div className="space-y-2">
+                  <Label>Upload File</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                      onChange={handleFileSelect}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Accepted: Images (JPG, PNG, GIF, WebP), PDF, DOC, DOCX, TXT (Max 10MB)
+                  </p>
+                </div>
+
+                {/* Preview uploaded file */}
+                {uploadedFile && (
+                  <div className="border rounded-lg p-3 bg-background">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {previewUrl ? (
+                          <ImageIcon className="h-5 w-5 text-primary flex-shrink-0" />
+                        ) : (
+                          <File className="h-5 w-5 text-primary flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(uploadedFile.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRemoveFile}
+                        className="h-8 w-8 p-0 flex-shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {previewUrl && (
+                      <div className="mt-3">
+                        <img 
+                          src={previewUrl} 
+                          alt="Preview" 
+                          className="max-w-full h-auto max-h-64 rounded border"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* OR divider */}
+                {!uploadedFile && (
+                  <>
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-muted/50 px-2 text-muted-foreground">Or</span>
+                      </div>
+                    </div>
+
+                    {/* URL Input */}
+                    <div className="space-y-2">
+                      <Label htmlFor="documentUrl">Document URL</Label>
+                      <Input
+                        id="documentUrl"
+                        placeholder="https://example.com/document.pdf or image URL"
+                        value={documentUrl}
+                        onChange={(e) => setDocumentUrl(e.target.value)}
+                        disabled={!!uploadedFile}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter a direct link to the document or image
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -152,20 +287,30 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
             <div className="space-y-3 border rounded-lg p-4 bg-muted/50">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <FileText className="h-4 w-4" />
-                Document Information
+                {isImage(card.documentUrl) ? 'Uploaded Image' : 'Document Information'}
               </div>
               <div className="space-y-2 text-sm">
-                <div>
-                  <strong>Document:</strong>{' '}
-                  <a 
-                    href={card.documentUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    {card.documentUrl}
-                  </a>
-                </div>
+                {isImage(card.documentUrl) ? (
+                  <div className="border rounded-lg overflow-hidden bg-background">
+                    <img 
+                      src={card.documentUrl} 
+                      alt="Uploaded document" 
+                      className="max-w-full h-auto max-h-96 mx-auto"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <strong>Document:</strong>{' '}
+                    <a 
+                      href={card.documentUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline break-all"
+                    >
+                      {card.documentUrl}
+                    </a>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-3 w-3" />
                   Uploaded: {formatDate(card.documentUploadedAt)}
@@ -210,18 +355,31 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
                 QC Review
               </div>
               
-              <div className="space-y-2 text-sm">
-                <div>
-                  <strong>Document:</strong>{' '}
-                  <a 
-                    href={card.documentUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline"
-                  >
-                    View Document
-                  </a>
-                </div>
+              <div className="space-y-3">
+                {isImage(card.documentUrl) ? (
+                  <div>
+                    <strong className="text-sm">Uploaded Image:</strong>
+                    <div className="mt-2 border rounded-lg overflow-hidden bg-background">
+                      <img 
+                        src={card.documentUrl} 
+                        alt="Document to review" 
+                        className="max-w-full h-auto max-h-96 mx-auto"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm">
+                    <strong>Document:</strong>{' '}
+                    <a 
+                      href={card.documentUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline break-all"
+                    >
+                      View Document
+                    </a>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-muted-foreground text-xs">
                   <Calendar className="h-3 w-3" />
                   Uploaded: {formatDate(card.documentUploadedAt)}
