@@ -15,6 +15,7 @@ import {
   Users,
   Package,
   PackageOpen,
+  CheckCircle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { href: "/locations", icon: MapPin, label: "Locations", permission: 'manage:locations' },
   { href: "/pallet-prod", icon: Package, label: "PalletProd" },
   { href: "/pallet-raw", icon: PackageOpen, label: "PalletRaw" },
+  { href: "/qc", icon: CheckCircle, label: "QC", permission: 'manage:qc' },
   { href: "/job-cards", icon: ClipboardList, label: "Job Cards" },
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
   { href: "/chat", icon: MessageSquare, label: "Chat" },

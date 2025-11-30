@@ -176,8 +176,30 @@ const MOCK_ORDERS: Order[] = [
   { id: 'ORD-003', type: 'Purchase', customerName: 'Supplier X', date: new Date().toISOString(), status: 'Shipped', items: [{ productId: 'PROD-YOG-01', productName: 'Greek Yogurt', quantity: 100 }], total: 5000.00, itemCount: 100 },
 ];
 const MOCK_SHIPMENTS: Shipment[] = [
-    { id: 'SHP-101', trackingNumber: '1Z999AA10123456784', carrier: 'UPS', orderId: 'ORD-001', status: 'In Transit', estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), origin: 'Warehouse A', destination: 'Global Corp HQ' },
-    { id: 'SHP-102', trackingNumber: '9400100000000000000000', carrier: 'USPS', orderId: 'ORD-003', status: 'Delivered', estimatedDelivery: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), origin: 'Supplier X', destination: 'Warehouse A' },
+    { 
+      id: 'SHP-101', 
+      trackingNumber: '1Z999AA10123456784', 
+      carrier: 'UPS', 
+      orderId: 'ORD-001', 
+      status: 'In Transit', 
+      estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 
+      origin: 'Warehouse A', 
+      destination: 'Global Corp HQ',
+      dispatchInspection: undefined,
+      receivingInspection: undefined,
+    },
+    { 
+      id: 'SHP-102', 
+      trackingNumber: '9400100000000000000000', 
+      carrier: 'USPS', 
+      orderId: 'ORD-003', 
+      status: 'Delivered', 
+      estimatedDelivery: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
+      origin: 'Supplier X', 
+      destination: 'Warehouse A',
+      dispatchInspection: undefined,
+      receivingInspection: undefined,
+    },
 ];
 export const MOCK_USERS_WITH_PASSWORDS: MockUserWithPassword[] = [
     { id: 'usr-admin', name: 'Admin User', email: 'admin@zenith.com', permissions: [...ALL_PERMISSIONS], password: 'password123' },
@@ -209,7 +231,18 @@ export class OrderEntity extends IndexedEntity<Order> {
 export class ShipmentEntity extends IndexedEntity<Shipment> {
     static readonly entityName = "shipment";
     static readonly indexName = "shipments";
-    static readonly initialState: Shipment = { id: "", trackingNumber: "", carrier: "", orderId: "", status: 'Preparing', estimatedDelivery: "", origin: "", destination: "" };
+    static readonly initialState: Shipment = { 
+      id: "", 
+      trackingNumber: "", 
+      carrier: "", 
+      orderId: "", 
+      status: 'Preparing', 
+      estimatedDelivery: "", 
+      origin: "", 
+      destination: "",
+      dispatchInspection: undefined,
+      receivingInspection: undefined,
+    };
     static seedData = MOCK_SHIPMENTS;
 }
 export class UserEntity extends IndexedEntity<User> {

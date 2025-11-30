@@ -106,6 +106,37 @@ export interface Order {
   itemCount: number; // Calculated on backend
 }
 export type ShipmentStatus = 'Preparing' | 'In Transit' | 'Delivered' | 'Delayed';
+
+export interface VehicleInspectionItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+}
+
+export interface VehicleInspection {
+  // Vehicle interior condition checklist
+  hasHoles: boolean;
+  isWet: boolean;
+  isClean: boolean;
+  hasDamage: boolean;
+  hasOdor: boolean;
+  temperatureOk: boolean;
+  
+  // Driver and vehicle information
+  driverName: string;
+  vehicleRegistration: string;
+  orderDocumentationNumber: string;
+  
+  // Products being dispatched/received
+  items: VehicleInspectionItem[];
+  
+  // Inspection metadata
+  inspectionDate: string; // ISO 8601 date string
+  inspectedBy: string; // User ID
+  inspectorName: string;
+  notes?: string;
+}
+
 export interface Shipment {
   id: string;
   trackingNumber: string;
@@ -115,6 +146,10 @@ export interface Shipment {
   estimatedDelivery: string; // ISO 8601 date string
   origin: string;
   destination: string;
+  
+  // Inspection data
+  dispatchInspection?: VehicleInspection;
+  receivingInspection?: VehicleInspection;
 }
 export interface DashboardStats {
   totalInventoryValue: number;
@@ -206,8 +241,68 @@ export const shipmentSchema = z.object({
     estimatedDelivery: z.string().min(1, "Estimated delivery date is required"),
     origin: z.string().min(1, "Origin is required"),
     destination: z.string().min(1, "Destination is required"),
+    dispatchInspection: z.object({
+      hasHoles: z.boolean(),
+      isWet: z.boolean(),
+      isClean: z.boolean(),
+      hasDamage: z.boolean(),
+      hasOdor: z.boolean(),
+      temperatureOk: z.boolean(),
+      driverName: z.string().min(1, "Driver name is required"),
+      vehicleRegistration: z.string().min(1, "Vehicle registration is required"),
+      orderDocumentationNumber: z.string().min(1, "Order documentation number is required"),
+      items: z.array(z.object({
+        productId: z.string(),
+        productName: z.string(),
+        quantity: z.number().positive(),
+      })),
+      inspectionDate: z.string(),
+      inspectedBy: z.string(),
+      inspectorName: z.string(),
+      notes: z.string().optional(),
+    }).optional(),
+    receivingInspection: z.object({
+      hasHoles: z.boolean(),
+      isWet: z.boolean(),
+      isClean: z.boolean(),
+      hasDamage: z.boolean(),
+      hasOdor: z.boolean(),
+      temperatureOk: z.boolean(),
+      driverName: z.string().min(1, "Driver name is required"),
+      vehicleRegistration: z.string().min(1, "Vehicle registration is required"),
+      orderDocumentationNumber: z.string().min(1, "Order documentation number is required"),
+      items: z.array(z.object({
+        productId: z.string(),
+        productName: z.string(),
+        quantity: z.number().positive(),
+      })),
+      inspectionDate: z.string(),
+      inspectedBy: z.string(),
+      inspectorName: z.string(),
+      notes: z.string().optional(),
+    }).optional(),
 });
 export type ShipmentFormData = z.infer<typeof shipmentSchema>;
+
+// Zod Schema for Vehicle Inspection
+export const vehicleInspectionSchema = z.object({
+  hasHoles: z.boolean(),
+  isWet: z.boolean(),
+  isClean: z.boolean(),
+  hasDamage: z.boolean(),
+  hasOdor: z.boolean(),
+  temperatureOk: z.boolean(),
+  driverName: z.string().min(2, "Driver name must be at least 2 characters"),
+  vehicleRegistration: z.string().min(2, "Vehicle registration is required"),
+  orderDocumentationNumber: z.string().min(1, "Order documentation number is required"),
+  items: z.array(z.object({
+    productId: z.string().min(1, "Product is required"),
+    productName: z.string(),
+    quantity: z.number().int().positive("Quantity must be positive"),
+  })).min(1, "At least one product must be added"),
+  notes: z.string().optional(),
+});
+export type VehicleInspectionFormData = z.infer<typeof vehicleInspectionSchema>;
 // Zod Schema for User Validation
 export const userSchema = z.object({
   id: z.string().min(1, "User ID is required"),

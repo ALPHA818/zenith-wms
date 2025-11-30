@@ -26,6 +26,7 @@ import ChatPage from '@/pages/ChatPage';
 import { GroupsPage } from '@/pages/GroupsPage';
 import { PalletProdPage } from '@/pages/PalletProdPage';
 import { PalletRawPage } from '@/pages/PalletRawPage';
+import { QCPage } from '@/pages/QCPage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -88,6 +89,10 @@ const router = createBrowserRouter([
       {
         path: "/groups",
         element: <GroupsPage />,
+      },
+      {
+        path: "/qc",
+        element: <QCPage />,
       },
     ]
   }
