@@ -5,12 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
+    "dev:bg": "bash ./start-background.sh",
+    "dev:auto": "bash ./start-dev.sh",
+    "dev:managed": "bash ./dev-server.sh",
+    "dev:clean": "pkill -f 'vite|wrangler' || true && rm -rf .wrangler && npm run dev",
     "build": "vite build",
     "lint": "eslint --cache -f json --quiet .",
     "preview": "bun run build && vite preview --host 0.0.0.0 --port 4173",
     "deploy": "bun run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "prepare": "bun .bootstrap.js || true"
+    "prepare": "bun .bootstrap.js || true",
+    "stop": "pkill -f 'vite|wrangler' || true && rm -f .dev-server.pid",
+    "status": "bash ./check-status.sh",
+    "logs": "tail -f dev-server.log"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

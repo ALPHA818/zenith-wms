@@ -46,6 +46,10 @@ yarn-error.log*
 pnpm-debug.log*
 debug.log*
 *.log
+dev-server.log
+
+# Dev server management
+.dev-server.pid
 
 # Env files
 .env

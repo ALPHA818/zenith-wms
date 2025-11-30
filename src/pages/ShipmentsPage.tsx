@@ -7,14 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, MoreHorizontal, Edit, Trash2, ClipboardCheck, PackageCheck } from "lucide-react";
-import { Shipment, ShipmentStatus, ShipmentFormData } from "@shared/types";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, ClipboardCheck, PackageCheck, Eye } from "lucide-react";
+import { Shipment, ShipmentStatus, ShipmentFormData, VehicleInspection } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShipmentFormSheet } from "@/components/wms/ShipmentFormSheet";
 import { useAuthStore } from "@/stores/authStore";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Separator } from "@/components/ui/separator";
 export function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,6 +24,8 @@ export function ShipmentsPage() {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
+  const [inspectionDialogOpen, setInspectionDialogOpen] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState<{ type: 'dispatch' | 'receiving', data: VehicleInspection } | null>(null);
   const user = useAuthStore((state) => state.user);
   const canManage = user?.permissions.includes('manage:shipments') ?? false;
   const isMobile = useIsMobile();
@@ -80,6 +84,12 @@ export function ShipmentsPage() {
       default: return 'outline';
     }
   };
+
+  const handleViewInspection = (type: 'dispatch' | 'receiving', data: VehicleInspection) => {
+    setSelectedInspection({ type, data });
+    setInspectionDialogOpen(true);
+  };
+
   const renderActions = (shipment: Shipment) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -170,16 +180,26 @@ export function ShipmentsPage() {
                   <TableCell>
                     <div className="flex gap-1">
                       {shipment.dispatchInspection && (
-                        <Badge variant="outline" className="text-xs">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs px-2"
+                          onClick={() => handleViewInspection('dispatch', shipment.dispatchInspection!)}
+                        >
                           <ClipboardCheck className="h-3 w-3 mr-1" />
-                          D
-                        </Badge>
+                          Dispatch
+                        </Button>
                       )}
                       {shipment.receivingInspection && (
-                        <Badge variant="outline" className="text-xs">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs px-2"
+                          onClick={() => handleViewInspection('receiving', shipment.receivingInspection!)}
+                        >
                           <PackageCheck className="h-3 w-3 mr-1" />
-                          R
-                        </Badge>
+                          Receiving
+                        </Button>
                       )}
                       {!shipment.dispatchInspection && !shipment.receivingInspection && (
                         <span className="text-xs text-muted-foreground">None</span>
@@ -215,6 +235,148 @@ export function ShipmentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={inspectionDialogOpen} onOpenChange={setInspectionDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedInspection?.type === 'dispatch' ? 'Dispatch' : 'Receiving'} Inspection Details
+            </DialogTitle>
+            <DialogDescription>
+              Completed by {selectedInspection?.data.inspectorName} on{' '}
+              {selectedInspection?.data.inspectionDate && new Date(selectedInspection.data.inspectionDate).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedInspection && (
+            <div className="space-y-6 py-4">
+              {/* Vehicle Condition */}
+              <div>
+                <h3 className="font-semibold mb-3">Vehicle Interior Condition</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant={selectedInspection.data.hasHoles ? "destructive" : "secondary"}>
+                      {selectedInspection.data.hasHoles ? "✗" : "✓"}
+                    </Badge>
+                    <span className="text-sm">Has Holes: {selectedInspection.data.hasHoles ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={selectedInspection.data.isWet ? "destructive" : "secondary"}>
+                      {selectedInspection.data.isWet ? "✗" : "✓"}
+                    </Badge>
+                    <span className="text-sm">Is Wet: {selectedInspection.data.isWet ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={selectedInspection.data.isClean ? "secondary" : "destructive"}>
+                      {selectedInspection.data.isClean ? "✓" : "✗"}
+                    </Badge>
+                    <span className="text-sm">Is Clean: {selectedInspection.data.isClean ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={selectedInspection.data.hasDamage ? "destructive" : "secondary"}>
+                      {selectedInspection.data.hasDamage ? "✗" : "✓"}
+                    </Badge>
+                    <span className="text-sm">Has Damage: {selectedInspection.data.hasDamage ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={selectedInspection.data.hasOdor ? "destructive" : "secondary"}>
+                      {selectedInspection.data.hasOdor ? "✗" : "✓"}
+                    </Badge>
+                    <span className="text-sm">Has Odor: {selectedInspection.data.hasOdor ? "Yes" : "No"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={selectedInspection.data.temperatureOk ? "secondary" : "destructive"}>
+                      {selectedInspection.data.temperatureOk ? "✓" : "✗"}
+                    </Badge>
+                    <span className="text-sm">Temperature OK: {selectedInspection.data.temperatureOk ? "Yes" : "No"}</span>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Driver & Vehicle Info */}
+              <div>
+                <h3 className="font-semibold mb-3">Driver & Vehicle Information</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Driver Name:</span>
+                    <span className="font-medium">{selectedInspection.data.driverName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Vehicle Registration:</span>
+                    <span className="font-medium">{selectedInspection.data.vehicleRegistration}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Order Documentation:</span>
+                    <span className="font-medium">{selectedInspection.data.orderDocumentationNumber}</span>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Products */}
+              <div>
+                <h3 className="font-semibold mb-3">Products ({selectedInspection.data.items.length})</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product ID</TableHead>
+                      <TableHead>Product Name</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedInspection.data.items.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-mono text-sm">{item.productId}</TableCell>
+                        <TableCell>{item.productName}</TableCell>
+                        <TableCell className="text-right">{item.quantity}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Notes */}
+              {selectedInspection.data.notes && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-semibold mb-2">Additional Notes</h3>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedInspection.data.notes}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              {/* Inspector Info */}
+              <div className="bg-muted p-3 rounded-md">
+                <h3 className="font-semibold mb-2 text-sm">Inspector Information</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Inspector:</span>
+                    <span className="font-medium">{selectedInspection.data.inspectorName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Inspector ID:</span>
+                    <span className="font-mono text-xs">{selectedInspection.data.inspectedBy}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Date & Time:</span>
+                    <span>{new Date(selectedInspection.data.inspectionDate).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Toaster richColors />
     </AppLayout>
   );
