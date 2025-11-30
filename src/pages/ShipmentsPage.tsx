@@ -103,14 +103,7 @@ export function ShipmentsPage() {
   );
   return (
     <AppLayout container>
-      <PageHeader title="Shipment Tracking" subtitle="Monitor all inbound and outbound shipments.">
-        {canManage && (
-          <Button onClick={handleAddShipment} className="hover:shadow-md transition-shadow">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create Shipment
-          </Button>
-        )}
-      </PageHeader>
+      <PageHeader title="Shipment Tracking" subtitle="Monitor all inbound and outbound shipments." />
       {loading ? (
         isMobile ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

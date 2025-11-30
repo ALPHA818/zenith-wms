@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Users,
   PackageOpen,
+  CheckCircle,
 } from "lucide-react";
 import { DashboardStats, Permission } from "@shared/types";
 import { api } from "@/lib/api-client";
@@ -35,6 +36,7 @@ interface NavCard {
 }
 
 const navCards: NavCard[] = [
+  { href: "/qc", icon: CheckCircle, label: "QC", description: "Quality control inspections", permission: 'manage:qc' },
   { href: "/inventory", icon: Boxes, label: "Inventory", description: "Manage product stock" },
   { href: "/orders", icon: ShoppingCart, label: "Orders", description: "Track and process orders" },
   { href: "/shipments", icon: Truck, label: "Shipments", description: "Monitor deliveries" },

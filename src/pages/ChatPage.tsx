@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { api } from '@/lib/api-client';
-import type { User } from '@shared/types';
+import type { User, Group } from '@shared/types';
 
 interface Message {
   id: string;
@@ -42,7 +42,9 @@ export default function ChatPage() {
   const isAdmin = user?.permissions.includes('manage:users');
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('all');
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [messageContent, setMessageContent] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -52,6 +54,7 @@ export default function ChatPage() {
   useEffect(() => {
     fetchMessages();
     fetchUsers();
+    fetchGroups();
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -74,6 +77,16 @@ export default function ChatPage() {
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const data = await api<Group[]>('/api/wms/groups');
+      // Only show groups that the current user is a member of
+      setGroups(data.filter(g => user && g.memberIds.includes(user.id)));
+    } catch (error) {
+      console.error('Failed to fetch groups:', error);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!messageContent.trim() || !user) return;
 
@@ -89,7 +102,7 @@ export default function ChatPage() {
           id: `msg-${Date.now()}`,
           senderId: user.id,
           senderName: user.name,
-          recipientId: selectedUser,
+          recipientId: selectedGroup ? `group-${selectedGroup}` : selectedUser,
           content: messageContent.trim(),
           timestamp: new Date().toISOString(),
           read: false,
@@ -185,6 +198,9 @@ export default function ChatPage() {
       (msg.senderId === user?.id && msg.recipientId === selectedUser) ||
       (msg.senderId === selectedUser && msg.recipientId === user?.id)
   );
+  const groupMessages = selectedGroup
+    ? messages.filter((msg) => msg.recipientId === `group-${selectedGroup}`)
+    : [];
 
   const renderMessages = (msgs: Message[]) => (
     <ScrollArea className="h-[500px] pr-4">
@@ -296,10 +312,11 @@ export default function ChatPage() {
 
         <Tabs defaultValue="company" className="w-full">
         <TabsList>
-          <TabsTrigger value="company" onClick={() => setSelectedUser('all')}>
+          <TabsTrigger value="company" onClick={() => { setSelectedUser('all'); setSelectedGroup(null); }}>
             Company Chat
           </TabsTrigger>
-          <TabsTrigger value="direct">Direct Messages</TabsTrigger>
+          <TabsTrigger value="direct" onClick={() => setSelectedGroup(null)}>Direct Messages</TabsTrigger>
+          <TabsTrigger value="groups" onClick={() => { setSelectedUser('all'); }}>Group Chats</TabsTrigger>
         </TabsList>
 
         <TabsContent value="company" className="space-y-4">
@@ -383,6 +400,87 @@ export default function ChatPage() {
                           ? 'Editing message...'
                           : `Message ${users.find((u) => u.id === selectedUser)?.name || ''}...`
                       }
+                      value={messageContent}
+                      onChange={(e) => setMessageContent(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                    />
+                    <Button onClick={handleSendMessage} size="icon">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="groups" className="space-y-4">
+          <div className="grid grid-cols-[250px_1fr] gap-4">
+            <div className="rounded-lg border bg-card p-4">
+              <h3 className="font-semibold mb-4">Groups</h3>
+              <ScrollArea className="h-[500px]">
+                <div className="space-y-2">
+                  {groups.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No groups yet</p>
+                  ) : (
+                    groups.map((g) => (
+                      <Button
+                        key={g.id}
+                        variant={selectedGroup === g.id ? 'default' : 'ghost'}
+                        className="w-full justify-start"
+                        onClick={() => setSelectedGroup(g.id)}
+                      >
+                        <Avatar className="h-6 w-6 mr-2">
+                          <AvatarFallback className="text-xs">
+                            {getInitials(g.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col items-start">
+                          <span className="text-sm font-medium">{g.name}</span>
+                          <span className="text-xs text-muted-foreground">{g.memberIds.length} members</span>
+                        </div>
+                      </Button>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="rounded-lg border bg-card p-4">
+              {!selectedGroup ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Select a group to start chatting
+                </p>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <h3 className="font-semibold">{groups.find(g => g.id === selectedGroup)?.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {groups.find(g => g.id === selectedGroup)?.description}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Members: {groups.find(g => g.id === selectedGroup)?.memberIds.map(id => {
+                        const member = users.find(u => u.id === id);
+                        return member ? member.name : (id === user?.id ? user.name : id);
+                      }).join(', ')}
+                    </p>
+                  </div>
+                  {renderMessages(groupMessages)}
+                  <div className="flex gap-2 mt-4">
+                    {editingMessageId && (
+                      <Button
+                        onClick={() => {
+                          setEditingMessageId(null);
+                          setMessageContent('');
+                        }}
+                        size="icon"
+                        variant="outline"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Input
+                      placeholder={editingMessageId ? 'Editing message...' : 'Type a message to the group...'}
                       value={messageContent}
                       onChange={(e) => setMessageContent(e.target.value)}
                       onKeyPress={handleKeyPress}
