@@ -86,7 +86,7 @@ export function VehicleInspectionFormSheet({
     const fetchProducts = async () => {
       try {
         setLoadingProducts(true);
-        const data = await api<Product[]>('/api/wms/products');
+        const data = await api<Product[]>('/api/wms/inventory');
         setProducts(data.filter(p => p.status === 'In Stock' || p.status === 'Low Stock'));
       } catch (error) {
         toast.error("Failed to fetch products.");

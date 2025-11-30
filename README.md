@@ -40,11 +40,46 @@ Follow these instructions to get the project up and running on your local machin
     bun install
     ```eeeee
 ### Running Locally
-To start the development server, which includes both the Vite frontend and the Wrangler server for the backend, run:
+
+**🚀 Recommended: Background Mode with Auto-Restart**
+
 ```bash
-bun dev
+npm run dev:bg
 ```
-This will start the application, typically available at `http://localhost:3000`.
+
+This starts the server in background mode with automatic crash recovery. The server will stay running even if you close the terminal!
+
+**Alternative Options:**
+
+```bash
+# Standard development server (foreground)
+npm run dev
+
+# Interactive with auto-restart
+npm run dev:auto
+
+# Clean start (removes cache)
+npm run dev:clean
+```
+
+**Server Management:**
+
+```bash
+# Check server status
+npm run status
+
+# View live logs
+npm run logs
+
+# Stop server
+npm run stop
+```
+
+The application will be available at:
+- **Local**: `http://localhost:3000`
+- **Network**: `http://[your-ip]:3000`
+
+For more details, see [DEV-SERVER.md](./DEV-SERVER.md)
 ## Development
 ### Frontend
 -   **Pages:** New pages can be added in the `src/pages` directory.
