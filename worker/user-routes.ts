@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from './core-utils';
 import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, PalletEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema, Pallet } from "@shared/types";
+import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema, Pallet, VehicleInspection, vehicleInspectionSchema } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- AUTH ROUTES ---
   const auth = new Hono<{ Bindings: Env }>();
@@ -352,6 +352,110 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!existed) return notFound(c, 'Shipment not found');
     return ok(c, { success: true });
   });
+
+  // --- VEHICLE INSPECTION ENDPOINTS ---
+  wms.post('/shipments/:id/dispatch-inspection', async (c) => {
+    const shipmentId = c.req.param('id');
+    const body = await c.req.json();
+    
+    // Validate inspection data
+    const validation = vehicleInspectionSchema.safeParse(body);
+    if (!validation.success) {
+      return bad(c, JSON.stringify(validation.error.flatten().fieldErrors));
+    }
+
+    // Get the shipment
+    const shipmentEntity = new ShipmentEntity(c.env, shipmentId);
+    if (!(await shipmentEntity.exists())) {
+      return notFound(c, 'Shipment not found');
+    }
+
+    // Get current user from request headers (assuming auth middleware sets this)
+    const userId = c.req.header('X-User-Id') || 'unknown';
+    const userName = c.req.header('X-User-Name') || 'Unknown User';
+
+    // Create inspection record
+    const inspection: VehicleInspection = {
+      ...validation.data,
+      inspectionDate: new Date().toISOString(),
+      inspectedBy: userId,
+      inspectorName: userName,
+    };
+
+    // Reduce inventory for dispatched products
+    for (const item of inspection.items) {
+      const productEntity = new ProductEntity(c.env, item.productId);
+      if (await productEntity.exists()) {
+        const product = await productEntity.getState();
+        const newQuantity = Math.max(0, product.quantity - item.quantity);
+        const newStatus = newQuantity === 0 ? 'Out of Stock' : newQuantity < 50 ? 'Low Stock' : 'In Stock';
+        
+        await productEntity.patch({
+          quantity: newQuantity,
+          status: newStatus,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    }
+
+    // Update shipment with inspection data
+    await shipmentEntity.patch({ dispatchInspection: inspection });
+    const updatedShipment = await shipmentEntity.getState();
+
+    return ok(c, updatedShipment);
+  });
+
+  wms.post('/shipments/:id/receiving-inspection', async (c) => {
+    const shipmentId = c.req.param('id');
+    const body = await c.req.json();
+    
+    // Validate inspection data
+    const validation = vehicleInspectionSchema.safeParse(body);
+    if (!validation.success) {
+      return bad(c, JSON.stringify(validation.error.flatten().fieldErrors));
+    }
+
+    // Get the shipment
+    const shipmentEntity = new ShipmentEntity(c.env, shipmentId);
+    if (!(await shipmentEntity.exists())) {
+      return notFound(c, 'Shipment not found');
+    }
+
+    // Get current user from request headers
+    const userId = c.req.header('X-User-Id') || 'unknown';
+    const userName = c.req.header('X-User-Name') || 'Unknown User';
+
+    // Create inspection record
+    const inspection: VehicleInspection = {
+      ...validation.data,
+      inspectionDate: new Date().toISOString(),
+      inspectedBy: userId,
+      inspectorName: userName,
+    };
+
+    // Add inventory for received products
+    for (const item of inspection.items) {
+      const productEntity = new ProductEntity(c.env, item.productId);
+      if (await productEntity.exists()) {
+        const product = await productEntity.getState();
+        const newQuantity = product.quantity + item.quantity;
+        const newStatus = newQuantity === 0 ? 'Out of Stock' : newQuantity < 50 ? 'Low Stock' : 'In Stock';
+        
+        await productEntity.patch({
+          quantity: newQuantity,
+          status: newStatus,
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    }
+
+    // Update shipment with inspection data
+    await shipmentEntity.patch({ receivingInspection: inspection });
+    const updatedShipment = await shipmentEntity.getState();
+
+    return ok(c, updatedShipment);
+  });
+
   // --- USERS CRUD ---
   wms.get('/users', async (c) => {
     const { items } = await UserEntity.list<typeof UserEntity>(c.env);
@@ -545,6 +649,11 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return bad(c, 'No document has been uploaded for this job card');
     }
     
+    // If rejecting, require notes
+    if (!approved && !notes?.trim()) {
+      return bad(c, 'Rejection reason is required');
+    }
+    
     if (approved) {
       await cardEntity.patch({
         qcApproved: true,
@@ -560,6 +669,30 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         qcNotes: notes,
         status: 'In Progress' as JobCardStatus,
       });
+      
+      // Notify admin users about the rejection
+      const { items: allUsers } = await UserEntity.list<typeof UserEntity>(c.env);
+      const adminUsers = allUsers.filter(u => u.permissions.includes('manage:users'));
+      
+      // Get the QC user who rejected it
+      const qcUser = allUsers.find(u => u.id === userId);
+      const qcUserName = qcUser?.name || 'QC Personnel';
+      
+      // Create notification messages for each admin
+      const timestamp = new Date().toISOString();
+      for (const admin of adminUsers) {
+        const messageId = `msg-rejection-${id}-${admin.id}-${Date.now()}`;
+        const notificationMessage: Message = {
+          id: messageId,
+          senderId: userId,
+          senderName: qcUserName,
+          recipientId: admin.id,
+          content: `Job Card "${card.title}" (${id}) has been rejected. Reason: ${notes}`,
+          timestamp,
+          read: false,
+        };
+        await MessageEntity.create(c.env, notificationMessage);
+      }
     }
     
     const updatedCard = await cardEntity.getState();

@@ -112,6 +112,12 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
   };
 
   const handleQCApproval = async (approved: boolean) => {
+    // If rejecting, require a reason
+    if (!approved && !qcNotes.trim()) {
+      toast.error("Please provide a reason for rejection");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await api(`/api/wms/job-cards/${card.id}/qc-approve`, {
@@ -122,7 +128,7 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
           userId: user?.id,
         }),
       });
-      toast.success(approved ? "Job card approved and moved to Done!" : "Job card rejected and sent back to In Progress");
+      toast.success(approved ? "Job card approved and moved to Done!" : "Job card rejected and sent back to In Progress. Admin users have been notified.");
       onUpdate();
       onClose();
       setQcNotes("");
@@ -387,14 +393,17 @@ export function JobCardActionDialog({ card, isOpen, onClose, onUpdate }: JobCard
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="qcNotes">QC Notes (Optional)</Label>
+                <Label htmlFor="qcNotes">QC Notes {!card.qcApproved && <span className="text-destructive">*</span>}</Label>
                 <Textarea
                   id="qcNotes"
-                  placeholder="Add any comments or feedback..."
+                  placeholder="Required when rejecting. Add reason for rejection or feedback..."
                   value={qcNotes}
                   onChange={(e) => setQcNotes(e.target.value)}
                   rows={3}
                 />
+                <p className="text-xs text-muted-foreground">
+                  * Required when rejecting the job card
+                </p>
               </div>
             </div>
           )}

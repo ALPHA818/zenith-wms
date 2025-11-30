@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Edit, Trash2, ClipboardCheck, PackageCheck } from "lucide-react";
 import { Shipment, ShipmentStatus, ShipmentFormData } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
@@ -111,8 +111,8 @@ export function ShipmentsPage() {
         ) : (
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader><TableRow>{Array.from({ length: canManage ? 6 : 5 }).map((_, i) => <TableHead key={i}><Skeleton className="h-4 w-20" /></TableHead>)}</TableRow></TableHeader>
-              <TableBody>{Array.from({ length: 4 }).map((_, i) => (<TableRow key={i}>{Array.from({ length: canManage ? 6 : 5 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>))}</TableBody>
+              <TableHeader><TableRow>{Array.from({ length: canManage ? 7 : 6 }).map((_, i) => <TableHead key={i}><Skeleton className="h-4 w-20" /></TableHead>)}</TableRow></TableHeader>
+              <TableBody>{Array.from({ length: 4 }).map((_, i) => (<TableRow key={i}>{Array.from({ length: canManage ? 7 : 6 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>))}</TableBody>
             </Table>
           </div>
         )
@@ -124,7 +124,23 @@ export function ShipmentsPage() {
             <Card key={shipment.id}>
               <CardHeader className="flex flex-row items-start justify-between">
                 <div>
-                  <CardTitle className="text-lg">{shipment.trackingNumber}</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {shipment.trackingNumber}
+                    <div className="flex gap-1">
+                      {shipment.dispatchInspection && (
+                        <Badge variant="outline" className="text-xs">
+                          <ClipboardCheck className="h-3 w-3 mr-1" />
+                          Dispatch
+                        </Badge>
+                      )}
+                      {shipment.receivingInspection && (
+                        <Badge variant="outline" className="text-xs">
+                          <PackageCheck className="h-3 w-3 mr-1" />
+                          Receiving
+                        </Badge>
+                      )}
+                    </div>
+                  </CardTitle>
                   <p className="text-sm text-muted-foreground">Order: {shipment.orderId}</p>
                 </div>
                 {canManage && renderActions(shipment)}
@@ -142,7 +158,7 @@ export function ShipmentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tracking #</TableHead><TableHead>Order ID</TableHead><TableHead>Carrier</TableHead><TableHead>Status</TableHead><TableHead>Est. Delivery</TableHead>
+                <TableHead>Tracking #</TableHead><TableHead>Order ID</TableHead><TableHead>Carrier</TableHead><TableHead>Status</TableHead><TableHead>Inspections</TableHead><TableHead>Est. Delivery</TableHead>
                 {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
@@ -151,6 +167,25 @@ export function ShipmentsPage() {
                 <TableRow key={shipment.id}>
                   <TableCell className="font-medium">{shipment.trackingNumber}</TableCell><TableCell>{shipment.orderId}</TableCell><TableCell>{shipment.carrier}</TableCell>
                   <TableCell><Badge variant={getStatusVariant(shipment.status)}>{shipment.status}</Badge></TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {shipment.dispatchInspection && (
+                        <Badge variant="outline" className="text-xs">
+                          <ClipboardCheck className="h-3 w-3 mr-1" />
+                          D
+                        </Badge>
+                      )}
+                      {shipment.receivingInspection && (
+                        <Badge variant="outline" className="text-xs">
+                          <PackageCheck className="h-3 w-3 mr-1" />
+                          R
+                        </Badge>
+                      )}
+                      {!shipment.dispatchInspection && !shipment.receivingInspection && (
+                        <span className="text-xs text-muted-foreground">None</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{new Date(shipment.estimatedDelivery).toLocaleDateString()}</TableCell>
                   {canManage && <TableCell className="text-right">{renderActions(shipment)}</TableCell>}
                 </TableRow>
@@ -160,7 +195,13 @@ export function ShipmentsPage() {
         </div>
       )}
       {canManage && (
-        <ShipmentFormSheet isOpen={isSheetOpen} onClose={() => setIsSheetOpen(false)} onSubmit={handleFormSubmit} shipment={selectedShipment} />
+        <ShipmentFormSheet 
+          isOpen={isSheetOpen} 
+          onClose={() => setIsSheetOpen(false)} 
+          onSubmit={handleFormSubmit} 
+          shipment={selectedShipment}
+          onRefresh={fetchShipments}
+        />
       )}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
