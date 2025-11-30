@@ -85,14 +85,14 @@ export function QCPage() {
 
   const getRelevantShipments = () => {
     if (activeTab === 'receiving') {
-      // Show shipments that are in transit or delivered but haven't had receiving inspection
+      // Show all shipments that need or have had receiving inspection
       return shipments.filter(s => 
-        (s.status === 'In Transit' || s.status === 'Delivered') && !s.receivingInspection
+        s.status === 'In Transit' || s.status === 'Delivered'
       );
     } else if (activeTab === 'dispatch') {
-      // Show shipments that are preparing or in transit but haven't had dispatch inspection
+      // Show all shipments that need or have had dispatch inspection
       return shipments.filter(s => 
-        (s.status === 'Preparing' || s.status === 'In Transit') && !s.dispatchInspection
+        s.status === 'Preparing' || s.status === 'In Transit'
       );
     } else {
       // Show all shipments that have either dispatch or receiving inspections
@@ -179,14 +179,26 @@ export function QCPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            onClick={() => handleInspection(shipment)}
-                            className="gap-2"
-                          >
-                            <ClipboardCheck className="h-4 w-4" />
-                            Inspect
-                          </Button>
+                          {shipment.receivingInspection ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewInspection('receiving', shipment.receivingInspection!, shipment)}
+                              className="gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View Details
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleInspection(shipment)}
+                              className="gap-2"
+                            >
+                              <ClipboardCheck className="h-4 w-4" />
+                              Inspect
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -246,14 +258,26 @@ export function QCPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            onClick={() => handleInspection(shipment)}
-                            className="gap-2"
-                          >
-                            <ClipboardCheck className="h-4 w-4" />
-                            Inspect
-                          </Button>
+                          {shipment.dispatchInspection ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewInspection('dispatch', shipment.dispatchInspection!, shipment)}
+                              className="gap-2"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View Details
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleInspection(shipment)}
+                              className="gap-2"
+                            >
+                              <ClipboardCheck className="h-4 w-4" />
+                              Inspect
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

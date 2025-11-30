@@ -402,6 +402,37 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     await shipmentEntity.patch({ dispatchInspection: inspection });
     const updatedShipment = await shipmentEntity.getState();
 
+    // Create or update order as "In Transit"
+    const orderId = updatedShipment.orderId;
+    const orderEntity = new OrderEntity(c.env, orderId);
+    
+    if (await orderEntity.exists()) {
+      // Update existing order to Shipped status
+      await orderEntity.patch({ 
+        status: 'Shipped' as OrderStatus,
+        date: new Date().toISOString()
+      });
+    } else {
+      // Create new order from inspection data
+      const newOrder: Order = {
+        id: orderId,
+        type: 'Sales' as OrderType,
+        customerName: inspection.driverName || 'Unknown',
+        date: new Date().toISOString(),
+        status: 'Shipped' as OrderStatus,
+        items: inspection.items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: 0, // Price would need to be fetched from product
+          subtotal: 0
+        })),
+        total: 0,
+        itemCount: inspection.items.reduce((sum, item) => sum + item.quantity, 0)
+      };
+      await OrderEntity.create(c.env, newOrder);
+    }
+
     return ok(c, updatedShipment);
   });
 
@@ -452,6 +483,37 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     // Update shipment with inspection data
     await shipmentEntity.patch({ receivingInspection: inspection });
     const updatedShipment = await shipmentEntity.getState();
+
+    // Create or update order as "In Transit"
+    const orderId = updatedShipment.orderId;
+    const orderEntity = new OrderEntity(c.env, orderId);
+    
+    if (await orderEntity.exists()) {
+      // Update existing order to Shipped status (In Transit)
+      await orderEntity.patch({ 
+        status: 'Shipped' as OrderStatus,
+        date: new Date().toISOString()
+      });
+    } else {
+      // Create new order from inspection data
+      const newOrder: Order = {
+        id: orderId,
+        type: 'Purchase' as OrderType,
+        customerName: inspection.driverName || 'Unknown Supplier',
+        date: new Date().toISOString(),
+        status: 'Shipped' as OrderStatus,
+        items: inspection.items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: 0, // Price would need to be fetched from product
+          subtotal: 0
+        })),
+        total: 0,
+        itemCount: inspection.items.reduce((sum, item) => sum + item.quantity, 0)
+      };
+      await OrderEntity.create(c.env, newOrder);
+    }
 
     return ok(c, updatedShipment);
   });
@@ -738,6 +800,60 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const id = c.req.param('id');
     const existed = await LocationEntity.delete(c.env, id);
     if (!existed) return notFound(c, 'Location not found');
+    return ok(c, { success: true });
+  });
+
+  // --- GROUPS CRUD ---
+  wms.get('/groups', async (c) => {
+    const { items } = await GroupEntity.list<typeof GroupEntity>(c.env);
+    return ok(c, items as Group[]);
+  });
+
+  wms.post('/groups', async (c) => {
+    const body = await c.req.json();
+    const validation = groupSchema.safeParse(body);
+    if (!validation.success) {
+      return bad(c, JSON.stringify(validation.error.flatten().fieldErrors));
+    }
+    const { id, ...rest } = validation.data;
+    const existing = new GroupEntity(c.env, id);
+    if (await existing.exists()) {
+      return bad(c, JSON.stringify({ id: ["Group ID already exists."] }));
+    }
+    
+    // Get current user from headers if available
+    const userId = c.req.header('X-User-Id') || 'system';
+    
+    const newGroup: Group = {
+      id,
+      ...rest,
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+    };
+    const createdGroup = await GroupEntity.create(c.env, newGroup);
+    return ok(c, createdGroup);
+  });
+
+  wms.put('/groups/:id', async (c) => {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const validation = groupSchema.omit({ id: true }).safeParse(body);
+    if (!validation.success) {
+      return bad(c, JSON.stringify(validation.error.flatten().fieldErrors));
+    }
+    const groupEntity = new GroupEntity(c.env, id);
+    if (!(await groupEntity.exists())) {
+      return notFound(c, 'Group not found');
+    }
+    await groupEntity.patch(validation.data);
+    const finalGroup = await groupEntity.getState();
+    return ok(c, finalGroup);
+  });
+
+  wms.delete('/groups/:id', async (c) => {
+    const id = c.req.param('id');
+    const existed = await GroupEntity.delete(c.env, id);
+    if (!existed) return notFound(c, 'Group not found');
     return ok(c, { success: true });
   });
 
