@@ -38,6 +38,7 @@ export function OrderFormSheet({ isOpen, onClose, onSubmit, order, products }: O
       id: "",
       type: "Sales",
       customerName: "",
+      carrier: "",
       items: [{ productId: "", productName: "", quantity: 1 }],
     },
   });
@@ -57,6 +58,7 @@ export function OrderFormSheet({ isOpen, onClose, onSubmit, order, products }: O
           id: `ORD-${Date.now().toString().slice(-4)}`,
           type: "Sales",
           customerName: "",
+          carrier: "",
           items: [{ productId: "", productName: "", quantity: 1 }],
         });
       }
@@ -121,6 +123,19 @@ export function OrderFormSheet({ isOpen, onClose, onSubmit, order, products }: O
                     <FormLabel>Customer / Supplier Name</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., Acme Corporation" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="carrier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Carrier</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., DHL, FedEx, UPS" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

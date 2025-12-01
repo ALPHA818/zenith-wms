@@ -39,7 +39,7 @@ export function LoginPage() {
       <div className="absolute inset-0 bg-grid-slate-100/[0.05] bg-[bottom_1px_center] dark:bg-grid-slate-400/[0.05] dark:bg-bottom mask-gradient" />
       <div className="z-10 flex flex-col items-center text-center">
         <div className="flex items-center gap-3 mb-6">
-          <Warehouse className="h-10 w-10 text-primary" />
+          <img src="/logo.svg" alt="Zenith WMS Logo" className="h-16 w-16" />
           <h1 className="text-4xl font-bold tracking-tight">Zenith Food WMS</h1>
         </div>
         <p className="text-muted-foreground mb-8 max-w-md">

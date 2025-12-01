@@ -198,14 +198,14 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!validation.success) {
       return bad(c, JSON.stringify(validation.error.flatten().fieldErrors));
     }
-    const { id, type, customerName, items } = validation.data;
+    const { id, type, customerName, carrier, items } = validation.data;
     const existing = new OrderEntity(c.env, id);
     if (await existing.exists()) {
       return bad(c, JSON.stringify({ id: ["Order ID already exists."] }));
     }
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
     const total = itemCount * 50.25; // Mock total calculation
-    const newOrder: Order = { id, type, customerName, items, status: 'Pending', date: new Date().toISOString(), itemCount, total };
+    const newOrder: Order = { id, type, customerName, carrier, items, status: 'Pending', date: new Date().toISOString(), itemCount, total };
     const createdOrder = await OrderEntity.create(c.env, newOrder);
     
     // Automatically create a Job and JobCard for this order
@@ -243,6 +243,29 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     };
     await JobCardEntity.create(c.env, newCard);
     
+    // Automatically create a Shipment for this order to be inspected by QC
+    const { items: existingShipments } = await ShipmentEntity.list<typeof ShipmentEntity>(c.env);
+    const maxShipmentId = existingShipments.reduce((max, s) => {
+      const num = parseInt(s.id.replace('SHP-', ''));
+      return num > max ? num : max;
+    }, 0);
+    const shipmentId = `SHP-${String(maxShipmentId + 1).padStart(4, '0')}`;
+    
+    // Generate tracking number
+    const trackingNumber = `TRK${Date.now().toString().slice(-8)}`;
+    
+    const newShipment: Shipment = {
+      id: shipmentId,
+      trackingNumber: trackingNumber,
+      carrier: carrier,
+      orderId: id,
+      status: 'Preparing',
+      estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      origin: 'Warehouse',
+      destination: customerName,
+    };
+    await ShipmentEntity.create(c.env, newShipment);
+    
     return ok(c, createdOrder);
   });
   wms.put('/orders/:id', async (c) => {
@@ -256,10 +279,10 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     if (!(await orderEntity.exists())) {
       return notFound(c, 'Order not found');
     }
-    const { type, customerName, items } = validation.data;
+    const { type, customerName, carrier, items } = validation.data;
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
     const total = itemCount * 50.25; // Mock total calculation
-    const updatedOrderData: Partial<Order> = { type, customerName, items, itemCount, total };
+    const updatedOrderData: Partial<Order> = { type, customerName, carrier, items, itemCount, total };
     await orderEntity.patch(updatedOrderData);
     const finalOrder = await orderEntity.getState();
     return ok(c, finalOrder);

@@ -16,6 +16,7 @@ export const ALL_PERMISSIONS = [
   'manage:locations',
   'manage:location-ids',
   'manage:qc',
+  'manage:financing',
 ] as const;
 export type Permission = typeof ALL_PERMISSIONS[number];
 export interface User {
@@ -99,6 +100,7 @@ export interface Order {
   id: string;
   type: OrderType;
   customerName: string; // Or supplier name for purchase orders
+  carrier: string; // Carrier/shipping company
   date: string; // ISO 8601 date string
   status: OrderStatus;
   items: OrderLineItem[];
@@ -126,6 +128,8 @@ export interface VehicleInspection {
   driverName: string;
   vehicleRegistration: string;
   orderDocumentationNumber: string;
+  deliveryTime?: string; // For dispatch - when delivery is expected
+  arrivalTime?: string; // For receiving - when vehicle arrived
   
   // Products being dispatched/received
   items: VehicleInspectionItem[];
@@ -228,6 +232,7 @@ export const orderSchema = z.object({
   id: z.string().min(1, "Order ID is required"),
   type: z.enum(['Sales', 'Purchase']),
   customerName: z.string().min(3, "Customer/Supplier name must be at least 3 characters"),
+  carrier: z.string().min(1, "Carrier is required"),
   items: z.array(orderLineItemSchema).min(1, "Order must have at least one item."),
 });
 export type OrderFormData = z.infer<typeof orderSchema>;
@@ -251,6 +256,8 @@ export const shipmentSchema = z.object({
       driverName: z.string().min(1, "Driver name is required"),
       vehicleRegistration: z.string().min(1, "Vehicle registration is required"),
       orderDocumentationNumber: z.string().min(1, "Order documentation number is required"),
+      deliveryTime: z.string().optional(),
+      arrivalTime: z.string().optional(),
       items: z.array(z.object({
         productId: z.string(),
         productName: z.string(),
@@ -271,6 +278,8 @@ export const shipmentSchema = z.object({
       driverName: z.string().min(1, "Driver name is required"),
       vehicleRegistration: z.string().min(1, "Vehicle registration is required"),
       orderDocumentationNumber: z.string().min(1, "Order documentation number is required"),
+      deliveryTime: z.string().optional(),
+      arrivalTime: z.string().optional(),
       items: z.array(z.object({
         productId: z.string(),
         productName: z.string(),
@@ -295,6 +304,8 @@ export const vehicleInspectionSchema = z.object({
   driverName: z.string().min(2, "Driver name must be at least 2 characters"),
   vehicleRegistration: z.string().min(2, "Vehicle registration is required"),
   orderDocumentationNumber: z.string().min(1, "Order documentation number is required"),
+  deliveryTime: z.string().optional(),
+  arrivalTime: z.string().optional(),
   items: z.array(z.object({
     productId: z.string().min(1, "Product is required"),
     productName: z.string(),
