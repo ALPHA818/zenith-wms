@@ -116,6 +116,7 @@ export function OrdersPage() {
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const user = useAuthStore((state) => state.user);
   const canManage = user?.permissions.includes('manage:orders') ?? false;
+  const canCreateOrder = (user?.permissions.includes('manage:financing') || user?.permissions.includes('manage:users')) ?? false;
   const isMobile = useIsMobile();
   const fetchData = useCallback(async () => {
     try {
@@ -186,7 +187,7 @@ export function OrdersPage() {
   return (
     <AppLayout container>
       <PageHeader title="Order Processing" subtitle="Manage sales and purchase orders.">
-        {canManage && (
+        {canCreateOrder && (
           <Button onClick={handleAddOrder} className="hover:shadow-md transition-shadow">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Order
@@ -205,7 +206,7 @@ export function OrdersPage() {
           <OrderTable orders={filterOrders('Purchase')} loading={loading} onEdit={handleEditOrder} onDelete={handleDeleteClick} onView={handleViewDetails} canManage={canManage} isMobile={isMobile} />
         </TabsContent>
       </Tabs>
-      {canManage && (
+      {canCreateOrder && (
         <OrderFormSheet isOpen={isSheetOpen} onClose={() => setIsSheetOpen(false)} onSubmit={handleFormSubmit} order={selectedOrder} products={products} />
       )}
       <OrderDetailsDialog isOpen={isDetailsDialogOpen} onClose={() => setIsDetailsDialogOpen(false)} order={viewingOrder} onStatusChange={handleStatusChange} />

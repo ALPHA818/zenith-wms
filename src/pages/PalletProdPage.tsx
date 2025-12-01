@@ -21,13 +21,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Package, MapPin, Calendar, AlertTriangle, Box, Plus, MoreVertical, Edit, Trash, Clock, List, Search } from "lucide-react";
+import { Package, MapPin, Calendar, AlertTriangle, Box, Plus, MoreVertical, Edit, Trash, Clock, List, Search, QrCode } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Pallet } from "@shared/types";
 import { Toaster, toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { PalletFormSheet } from "@/components/wms/PalletFormSheet";
 import { PalletListDialog } from "@/components/wms/PalletListDialog";
+import { QRCodeDisplay } from "@/components/wms/QRCodeDisplay";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function PalletProdPage() {
   const [pallets, setPallets] = useState<Pallet[]>([]);
@@ -38,6 +46,8 @@ export function PalletProdPage() {
   const [palletToDelete, setPalletToDelete] = useState<Pallet | null>(null);
   const [palletListOpen, setPalletListOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedPalletForQR, setSelectedPalletForQR] = useState<Pallet | null>(null);
 
   const fetchPallets = async () => {
     try {
@@ -71,6 +81,11 @@ export function PalletProdPage() {
   const handleEmptyPallet = (pallet: Pallet) => {
     setPalletToDelete(pallet);
     setDeleteDialogOpen(true);
+  };
+
+  const handleShowQRCode = (pallet: Pallet) => {
+    setSelectedPalletForQR(pallet);
+    setQrDialogOpen(true);
   };
 
   const handleSubmitPallet = async (palletData: Partial<Pallet>) => {
@@ -241,6 +256,14 @@ export function PalletProdPage() {
                         )}
                       </>
                     )}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 gap-1"
+                      onClick={() => handleShowQRCode(pallet)}
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -370,6 +393,22 @@ export function PalletProdPage() {
       </AlertDialog>
 
       <PalletListDialog isOpen={palletListOpen} onClose={() => setPalletListOpen(false)} />
+      
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pallet QR Code</DialogTitle>
+            <DialogDescription>
+              Scan this QR code to quickly access pallet {selectedPalletForQR?.id}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center py-4">
+            {selectedPalletForQR && (
+              <QRCodeDisplay value={selectedPalletForQR.id} size={250} showDownload={true} showPrint={true} palletData={selectedPalletForQR} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Toaster richColors />
     </AppLayout>

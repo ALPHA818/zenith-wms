@@ -72,6 +72,8 @@ export function VehicleInspectionFormSheet({
       driverName: "",
       vehicleRegistration: "",
       orderDocumentationNumber: orderId || "",
+      deliveryTime: "",
+      arrivalTime: "",
       items: [],
       notes: "",
     } as VehicleInspectionFormData,
@@ -108,6 +110,8 @@ export function VehicleInspectionFormSheet({
         driverName: "",
         vehicleRegistration: "",
         orderDocumentationNumber: orderId || "",
+        deliveryTime: "",
+        arrivalTime: "",
         items: [],
         notes: "",
       });
@@ -347,6 +351,44 @@ export function VehicleInspectionFormSheet({
                     </FormItem>
                   )}
                 />
+
+                {inspectionType === 'dispatch' && (
+                  <FormField
+                    control={form.control}
+                    name="deliveryTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Expected Delivery Time</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          When is this shipment expected to be delivered?
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {inspectionType === 'receiving' && (
+                  <FormField
+                    control={form.control}
+                    name="arrivalTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Arrival Time</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          When did this shipment arrive?
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </CardContent>
             </Card>
 

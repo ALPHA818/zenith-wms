@@ -16,6 +16,7 @@ import {
   Package,
   PackageOpen,
   CheckCircle,
+  Scan,
 } from "lucide-react";
 import {
   Sidebar,
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { href: "/pallet-prod", icon: Package, label: "PalletProd" },
   { href: "/pallet-raw", icon: PackageOpen, label: "PalletRaw" },
   { href: "/qc", icon: CheckCircle, label: "QC", permission: 'manage:qc' },
+  { href: "/scanning", icon: Scan, label: "Scanning" },
   { href: "/job-cards", icon: ClipboardList, label: "Job Cards" },
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
   { href: "/chat", icon: MessageSquare, label: "Chat" },
@@ -62,7 +64,7 @@ export function AppSidebar(): JSX.Element {
     <Sidebar>
       <SidebarHeader>
         <Link to="/" className="flex items-center gap-2.5 px-2 py-1">
-          <Warehouse className="h-7 w-7 text-primary" />
+          <img src="/logo.svg" alt="Zenith WMS" className="h-10 w-10" />
           <span className="text-lg font-semibold tracking-tight">Zenith WMS</span>
         </Link>
       </SidebarHeader>

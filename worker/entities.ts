@@ -171,9 +171,9 @@ const generateMockProducts = (): Product[] => {
 const MOCK_PRODUCTS: Product[] = generateMockProducts();
 
 const MOCK_ORDERS: Order[] = [
-  { id: 'ORD-001', type: 'Sales', customerName: 'Global Corp', date: new Date().toISOString(), status: 'Processing', items: [{ productId: 'PROD-APL-01', productName: 'Organic Apples', quantity: 50 }, { productId: 'PROD-CHE-01', productName: 'Cheddar Cheese', quantity: 20 }], total: 1500.00, itemCount: 70 },
-  { id: 'ORD-002', type: 'Sales', customerName: 'Innovate Inc', date: new Date().toISOString(), status: 'Pending', items: [{ productId: 'PROD-PEA-01', productName: 'Frozen Peas', quantity: 10 }], total: 750.50, itemCount: 10 },
-  { id: 'ORD-003', type: 'Purchase', customerName: 'Supplier X', date: new Date().toISOString(), status: 'Shipped', items: [{ productId: 'PROD-YOG-01', productName: 'Greek Yogurt', quantity: 100 }], total: 5000.00, itemCount: 100 },
+  { id: 'ORD-001', type: 'Sales', customerName: 'Global Corp', carrier: 'UPS', date: new Date().toISOString(), status: 'Processing', items: [{ productId: 'PROD-APL-01', productName: 'Organic Apples', quantity: 50 }, { productId: 'PROD-CHE-01', productName: 'Cheddar Cheese', quantity: 20 }], total: 1500.00, itemCount: 70 },
+  { id: 'ORD-002', type: 'Sales', customerName: 'Innovate Inc', carrier: 'FedEx', date: new Date().toISOString(), status: 'Pending', items: [{ productId: 'PROD-PEA-01', productName: 'Frozen Peas', quantity: 10 }], total: 750.50, itemCount: 10 },
+  { id: 'ORD-003', type: 'Purchase', customerName: 'Supplier X', carrier: 'USPS', date: new Date().toISOString(), status: 'Shipped', items: [{ productId: 'PROD-YOG-01', productName: 'Greek Yogurt', quantity: 100 }], total: 5000.00, itemCount: 100 },
 ];
 const MOCK_SHIPMENTS: Shipment[] = [
     { 
@@ -225,7 +225,7 @@ export class ProductEntity extends IndexedEntity<Product> {
 export class OrderEntity extends IndexedEntity<Order> {
   static readonly entityName = "order";
   static readonly indexName = "orders";
-  static readonly initialState: Order = { id: "", type: 'Sales', customerName: "", date: "", status: 'Pending', items: [], total: 0, itemCount: 0 };
+  static readonly initialState: Order = { id: "", type: 'Sales', customerName: "", carrier: "", date: "", status: 'Pending', items: [], total: 0, itemCount: 0 };
   static seedData = MOCK_ORDERS;
 }
 export class ShipmentEntity extends IndexedEntity<Shipment> {

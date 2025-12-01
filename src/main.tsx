@@ -27,6 +27,7 @@ import { GroupsPage } from '@/pages/GroupsPage';
 import { PalletProdPage } from '@/pages/PalletProdPage';
 import { PalletRawPage } from '@/pages/PalletRawPage';
 import { QCPage } from '@/pages/QCPage';
+import { ScanningPage } from '@/pages/ScanningPage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -93,6 +94,10 @@ const router = createBrowserRouter([
       {
         path: "/qc",
         element: <QCPage />,
+      },
+      {
+        path: "/scanning",
+        element: <ScanningPage />,
       },
     ]
   }

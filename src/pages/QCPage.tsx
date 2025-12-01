@@ -460,6 +460,18 @@ export function QCPage() {
                     <span className="text-muted-foreground">Order Documentation:</span>
                     <span className="font-medium">{selectedInspection.data.orderDocumentationNumber}</span>
                   </div>
+                  {selectedInspection.data.deliveryTime && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Expected Delivery Time:</span>
+                      <span className="font-medium">{new Date(selectedInspection.data.deliveryTime).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {selectedInspection.data.arrivalTime && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Arrival Time:</span>
+                      <span className="font-medium">{new Date(selectedInspection.data.arrivalTime).toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
