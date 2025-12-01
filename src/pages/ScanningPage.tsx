@@ -8,11 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Scan, Package, ShoppingCart, Truck, CheckCircle, AlertCircle, Search } from "lucide-react";
+import { Scan, Package, ShoppingCart, Truck, CheckCircle, AlertCircle, Search, Camera } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { api } from "@/lib/api-client";
 import { Product, Order, Shipment, Pallet } from "@shared/types";
 import { PalletScanDialog } from "@/components/wms/PalletScanDialog";
+import jsQR from "jsqr";
 
 type ScanResult = {
   type: 'product' | 'order' | 'shipment' | 'pallet' | 'unknown';
@@ -29,10 +30,148 @@ export function ScanningPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [palletDialogOpen, setPalletDialogOpen] = useState(false);
   const [scannedPallet, setScannedPallet] = useState<Pallet | null>(null);
+  const [cameraScanning, setCameraScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scanIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Auto-focus input when page loads
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    // Cleanup camera on unmount
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  const startCameraScan = async () => {
+    try {
+      setCameraScanning(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } // Use rear camera on mobile
+      });
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+        toast.info("Camera activated - scanning for QR codes...");
+        
+        // Start continuous scanning
+        scanIntervalRef.current = window.setInterval(() => {
+          scanQRCode();
+        }, 500); // Scan every 500ms
+      }
+    } catch (error) {
+      console.error("Camera access error:", error);
+      toast.error("Unable to access camera. Please check permissions.");
+      setCameraScanning(false);
+    }
+  };
+
+  const stopCameraScan = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    
+    // Clear scanning interval
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    
+    setCameraScanning(false);
+  };
+
+  const scanQRCode = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    
+    if (!context || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+    // Set canvas size to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Get image data
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+    // Scan for QR code
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+
+    if (code) {
+      // Validate if it's a company QR code
+      const isValidCompanyCode = 
+        code.data.startsWith('PROD-') || 
+        code.data.startsWith('ORD-') || 
+        code.data.startsWith('SHP-') || 
+        code.data.startsWith('PLT-');
+      
+      if (isValidCompanyCode) {
+        // Valid company QR code detected!
+        toast.success("Company QR code detected!");
+        stopCameraScan();
+        
+        // Populate input field with decoded data
+        setScanInput(code.data);
+        
+        // Automatically trigger scan
+        handleScan(code.data);
+      } else {
+        // Invalid QR code - not a company code
+        toast.warning(`Invalid QR code: ${code.data.substring(0, 20)}... Only company codes allowed (PROD-*, ORD-*, SHP-*, PLT-*)`);
+      }
+    }
+  };
+
+  const captureAndScan = () => {
+    // Manual capture - try to scan once
+    scanQRCode();
+    
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+
+    if (!code) {
+      toast.warning("No QR code detected. Please try again or enter code manually.");
+      stopCameraScan();
+      inputRef.current?.focus();
+    }
+  };
+
+  useEffect(() => {
+    // Cleanup camera on unmount
+    return () => {
+      stopCameraScan();
+    };
   }, []);
 
   const handleScan = async (code: string) => {
@@ -357,7 +496,7 @@ export function ScanningPage() {
                   autoFocus
                 />
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end gap-2">
                 <Button 
                   onClick={() => handleScan(scanInput)}
                   disabled={!scanInput.trim() || scanning}
@@ -366,8 +505,52 @@ export function ScanningPage() {
                   <Search className="h-4 w-4" />
                   Lookup
                 </Button>
+                <Button 
+                  variant="outline"
+                  onClick={cameraScanning ? stopCameraScan : startCameraScan}
+                  disabled={scanning}
+                  className="gap-2"
+                >
+                  <Camera className="h-4 w-4" />
+                  {cameraScanning ? 'Stop' : 'Scan QR'}
+                </Button>
               </div>
             </div>
+
+            {/* Camera Preview */}
+            {cameraScanning && (
+              <Card className="border-2 border-primary">
+                <CardContent className="p-4 space-y-3">
+                  <div className="relative bg-black rounded-lg overflow-hidden">
+                    <video 
+                      ref={videoRef}
+                      className="w-full h-64 object-cover"
+                      playsInline
+                    />
+                    <div className="absolute inset-0 border-4 border-primary/30 pointer-events-none">
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-4 border-primary rounded-lg"></div>
+                    </div>
+                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/75 text-white px-4 py-2 rounded-full text-sm">
+                      <Scan className="inline h-4 w-4 mr-2 animate-pulse" />
+                      Scanning...
+                    </div>
+                  </div>
+                  <canvas ref={canvasRef} className="hidden" />
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={stopCameraScan}
+                      className="flex-1"
+                    >
+                      Stop Scanning
+                    </Button>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">
+                    QR codes will be automatically detected and scanned
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Last Scan Result */}
             {lastScan && (

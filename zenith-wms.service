@@ -1,0 +1,16 @@
+[Unit]
+Description=Zenith WMS Development Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/h/Documents/zenith-wms
+ExecStart=/usr/bin/npm run dev
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=default.target
