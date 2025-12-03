@@ -48,19 +48,24 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   });
   // Dashboard Stats
   wms.get('/stats', async (c) => {
-    const [products, orders, shipments] = await Promise.all([
-      ProductEntity.list<typeof ProductEntity>(c.env).then(p => p.items),
-      OrderEntity.list<typeof OrderEntity>(c.env).then(o => o.items),
-      ShipmentEntity.list<typeof ShipmentEntity>(c.env).then(s => s.items),
-    ]);
-    const stats: DashboardStats = {
-      totalInventoryValue: 125450.00, // Mocked as product price is not available
-      totalInventoryAmount: products.reduce((sum, p) => sum + p.quantity, 0),
-      pendingOrders: orders.filter(o => o.status === 'Pending').length,
-      outOfStockItems: products.filter(p => p.status === 'Out of Stock').length,
-      shipmentsInTransit: shipments.filter(s => s.status === 'In Transit').length,
-    };
-    return ok(c, stats);
+    try {
+      const [products, orders, shipments] = await Promise.all([
+        ProductEntity.list<typeof ProductEntity>(c.env).then(p => p.items),
+        OrderEntity.list<typeof OrderEntity>(c.env).then(o => o.items),
+        ShipmentEntity.list<typeof ShipmentEntity>(c.env).then(s => s.items),
+      ]);
+      const stats: DashboardStats = {
+        totalInventoryValue: 125450.00, // Mocked as product price is not available
+        totalInventoryAmount: products.reduce((sum, p) => sum + p.quantity, 0),
+        pendingOrders: orders.filter(o => o.status === 'Pending').length,
+        outOfStockItems: products.filter(p => p.status === 'Out of Stock').length,
+        shipmentsInTransit: shipments.filter(s => s.status === 'In Transit').length,
+      };
+      return ok(c, stats);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return bad(c, `Failed to fetch dashboard stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   });
   // --- REPORTING ENDPOINTS ---
   wms.get('/reports/inventory-summary', async (c) => {
