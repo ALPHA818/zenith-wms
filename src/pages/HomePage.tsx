@@ -66,11 +66,38 @@ export function HomePage() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const data = await api<DashboardStats>('/api/wms/stats');
+        setStats(null); // Clear previous state
+        console.log('Fetching dashboard stats from /api/wms/stats...');
+        
+        // Add cache busting
+        const timestamp = Date.now();
+        const data = await api<DashboardStats>(`/api/wms/stats?_=${timestamp}`);
+        console.log('Dashboard stats loaded successfully:', data);
+        console.log('Stats type:', typeof data);
+        console.log('Stats keys:', Object.keys(data || {}));
+        
+        if (!data) {
+          console.error('Stats data is null or undefined');
+          throw new Error('No data received from API');
+        }
+        
         setStats(data);
       } catch (error) {
-        toast.error("Failed to load dashboard stats.");
-        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 
+                            (typeof error === 'string' ? error : 
+                            (error && typeof error === 'object' && 'message' in error ? String((error as any).message) : 
+                            'Unknown error'));
+        
+        console.error('Failed to load dashboard stats:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error constructor:', error?.constructor?.name);
+        console.error('Error details:', {
+          message: errorMessage,
+          stack: error instanceof Error ? error.stack : undefined,
+          raw: error
+        });
+        
+        toast.error(`Failed to load dashboard stats: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -89,7 +116,7 @@ export function HomePage() {
       
       {/* Stats Section */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        {loading || !stats ? (
+        {loading ? (
           <>
             {isAdmin && <Skeleton className="h-[126px] rounded-lg" />}
             <Skeleton className="h-[126px] rounded-lg" />
@@ -97,6 +124,10 @@ export function HomePage() {
             <Skeleton className="h-[126px] rounded-lg" />
             <Skeleton className="h-[126px] rounded-lg" />
           </>
+        ) : !stats ? (
+          <div className="col-span-full text-center py-8 text-muted-foreground">
+            Failed to load dashboard statistics. Please refresh the page.
+          </div>
         ) : (
           <>
             {isAdmin && (
@@ -117,21 +148,21 @@ export function HomePage() {
             />
             <DashboardStatsCard
               title="Pending Orders"
-              value={`+${stats.pendingOrders}`}
+              value={`${stats.pendingOrders || 0}`}
               description="Awaiting processing"
               icon={<Package className="h-5 w-5" />}
               href="/orders"
             />
             <DashboardStatsCard
               title="Out of Stock Items"
-              value={`${stats.outOfStockItems}`}
+              value={`${stats.outOfStockItems || 0}`}
               description="Needs immediate restocking"
               icon={<PackageX className="h-5 w-5" />}
               href="/inventory"
             />
             <DashboardStatsCard
               title="Shipments In-Transit"
-              value={`+${stats.shipmentsInTransit}`}
+              value={`${stats.shipmentsInTransit || 0}`}
               description="Currently on the way"
               icon={<Truck className="h-5 w-5" />}
               href="/shipments"
