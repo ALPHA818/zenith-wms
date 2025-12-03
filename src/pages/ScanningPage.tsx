@@ -41,16 +41,20 @@ export function ScanningPage() {
   }, []);
 
   useEffect(() => {
-    // Cleanup camera on unmount
+    // Capture refs at effect creation time for cleanup
+    const videoEl = videoRef.current;
+    const intervalId = scanIntervalRef.current;
+
+    // Cleanup camera and scanning interval on unmount
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
+      if (videoEl && videoEl.srcObject) {
+        const stream = videoEl.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
+        videoEl.srcObject = null;
       }
-      
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
+
+      if (intervalId) {
+        clearInterval(intervalId);
         scanIntervalRef.current = null;
       }
     };
