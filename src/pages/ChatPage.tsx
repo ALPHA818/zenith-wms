@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { PageHeader } from '@/components/wms/PageHeader';
 import { useAuthStore } from '@/stores/authStore';
@@ -57,27 +57,27 @@ export default function ChatPage() {
     fetchGroups();
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchUsers, fetchGroups, fetchMessages]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
       const data = await api<Message[]>('/api/wms/messages');
       setMessages(data);
     } catch (error) {
       console.error('Failed to fetch messages:', error);
     }
-  };
+  }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const data = await api<User[]>('/api/wms/users');
       setUsers(data.filter((u) => u.id !== user?.id));
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }
-  };
+  }, [user]);
 
-  const fetchGroups = async () => {
+  const fetchGroups = useCallback(async () => {
     try {
       const data = await api<Group[]>('/api/wms/groups');
       // Only show groups that the current user is a member of
@@ -85,7 +85,7 @@ export default function ChatPage() {
     } catch (error) {
       console.error('Failed to fetch groups:', error);
     }
-  };
+  }, [user]);
 
   const handleSendMessage = async () => {
     if (!messageContent.trim() || !user) return;
