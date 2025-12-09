@@ -88,8 +88,9 @@ function watchDependenciesPlugin() {
 // https://vite.dev/config/
 export default ({ mode }: { mode: string }) => {
   const env = loadEnv(mode, process.cwd());
+  const enableCf = env.VITE_ENABLE_CF_PLUGIN === 'true';
   return defineConfig({
-    plugins: [react(), cloudflare(), watchDependenciesPlugin()],
+    plugins: [react(), ...(enableCf ? [cloudflare()] : []), watchDependenciesPlugin()],
     build: {
       minify: true,
       sourcemap: "inline", // Use inline source maps for better error reporting
@@ -106,6 +107,9 @@ export default ({ mode }: { mode: string }) => {
     },
     server: {
       allowedHosts: true,
+      hmr: {
+        overlay: false,
+      },
     },
     resolve: {
       alias: {
