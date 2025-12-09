@@ -1,8 +1,38 @@
 {
-  "name": "zenith-wms-r-ypkuxpwxsnrzjvm_fit",
+  "name": "zenith-wms",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Zenith WMS desktop application",
   "type": "module",
+  "main": "electron/main.cjs",
+  "author": {
+    "name": "Zenith WMS",
+    "email": "admin@zenithwms.local"
+  },
+  "build": {
+    "appId": "com.alpha818.zenithwms",
+    "productName": "Zenith WMS",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ALPHA818",
+        "repo": "zenith-wms"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "icon": "icons/png"
+    }
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3000",
     "dev:bg": "bash ./start-background.sh",
@@ -10,6 +40,9 @@
     "dev:managed": "bash ./dev-server.sh",
     "dev:clean": "pkill -f 'vite|wrangler' || true && rm -rf .wrangler && npm run dev",
     "build": "vite build",
+    "electron:dev": "NODE_ENV=development electron .",
+    "desktop:dev": "npm run dev & NODE_ENV=development electron .",
+    "electron:build": "npm run build && electron-builder --linux",
     "lint": "eslint --cache -f json --quiet .",
     "preview": "bun run build && vite preview --host 0.0.0.0 --port 4173",
     "deploy": "bun run build && wrangler deploy",
@@ -100,11 +133,16 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
+    "electron": "^32.3.3",
+    "electron-builder": "^24.13.3",
+    "electron-log": "^5.2.2",
+    "electron-updater": "^6.1.7",
     "eslint": "^9.31.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "postcss": "^8.5.3",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.17",
     "typescript": "5.8",
     "typescript-eslint": "^8.26.1",
