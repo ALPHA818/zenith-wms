@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, dialog } = require('electron');
+const { app, BrowserWindow, shell, dialog, session } = require('electron');
 const path = require('node:path');
 const http = require('node:http');
 const fs = require('node:fs');
@@ -45,6 +45,16 @@ async function createWindow() {
   });
 
   const isDev = process.env.NODE_ENV === 'development';
+  // In Electron dev, set a strict CSP header (no 'unsafe-eval') to avoid security warnings.
+  if (isDev) {
+    // Allow inline scripts for Vite's React Refresh preamble, but keep eval disabled
+    const csp = "default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http: https: ws: wss:; worker-src 'self' blob:; frame-src 'self'";
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      const headers = { ...details.responseHeaders };
+      headers['Content-Security-Policy'] = [csp];
+      callback({ responseHeaders: headers });
+    });
+  }
   if (isDev) {
     const devUrl = await findDevUrl();
     if (devUrl) {

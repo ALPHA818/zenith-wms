@@ -162,6 +162,25 @@ export interface DashboardStats {
   outOfStockItems: number;
   shipmentsInTransit: number;
 }
+// Warehouse Settings
+export interface WarehouseConfig {
+  id: string; // stable id like "w1", "w2"
+  name?: string; // optional display name
+  palletLocations: number;
+}
+export interface WarehouseSettings {
+  warehouses: WarehouseConfig[];
+}
+
+export const warehouseConfigSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().optional(),
+  palletLocations: z.number().int().min(1, "At least 1 location").max(10000, "Too many locations"),
+});
+
+export const warehouseSettingsSchema = z.object({
+  warehouses: z.array(warehouseConfigSchema).min(1, "At least 1 warehouse").max(100, "Too many warehouses"),
+});
 // Reporting Types
 export interface InventorySummaryItem {
   name: string;
