@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { PlusCircle, MoreHorizontal, Edit, Trash2, List } from "lucide-react";
-import { User, UserFormData } from "@shared/types";
+import { User, UserFormData, WarehouseSettings } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +24,9 @@ const formatPermissionName = (permission: string) => {
 export function SettingsPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<WarehouseSettings | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -49,9 +52,22 @@ export function SettingsPage() {
       setLoading(false);
     }
   }, []);
+  const fetchSettings = useCallback(async () => {
+    try {
+      setSettingsLoading(true);
+      const data = await api<WarehouseSettings>('/api/settings');
+      setSettings(data);
+    } catch (error) {
+      toast.error("Failed to fetch settings.");
+      console.error(error);
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, []);
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchSettings();
+  }, [fetchUsers, fetchSettings]);
   const handleAddUser = () => { setSelectedUser(null); setIsSheetOpen(true); };
   const handleEditUser = (user: User) => { setSelectedUser(user); setIsSheetOpen(true); };
   const handleDeleteClick = (user: User) => { setUserToDelete(user); setIsDeleteDialogOpen(true); };
@@ -185,6 +201,82 @@ export function SettingsPage() {
         {canManage && (
           <Card>
             <CardHeader>
+              <CardTitle>Warehouse Configuration</CardTitle>
+              <CardDescription>Set the number of warehouses and pallet locations per warehouse.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 max-w-3xl">
+              {settingsLoading && !settings ? (
+                <>
+                  <Skeleton className="h-10" />
+                  <Skeleton className="h-10" />
+                </>
+              ) : settings ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="warehouseCount">Warehouses</Label>
+                    <input
+                      id="warehouseCount"
+                      type="number"
+                      min={1}
+                      max={100}
+                      className="border rounded-md h-9 px-3 w-full bg-background max-w-xs"
+                      value={settings.warehouses.length}
+                      onChange={(e) => {
+                        const count = Math.max(1, Math.min(100, parseInt(e.target.value || '1', 10)));
+                        setSettings((s) => {
+                          if (!s) return s;
+                          const cur = [...s.warehouses];
+                          if (count > cur.length) {
+                            const add = Array.from({ length: count - cur.length }, (_, idx) => {
+                              const n = cur.length + idx + 1;
+                              return { id: `w${n}`, name: `Warehouse ${n}`, palletLocations: 100 };
+                            });
+                            return { warehouses: [...cur, ...add] };
+                          }
+                          return { warehouses: cur.slice(0, count) };
+                        });
+                      }}
+                    />
+                    <p className="text-sm text-muted-foreground">Adjust the number of warehouses. New warehouses default to 100 pallet locations.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label>Per-warehouse pallet locations</Label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {settings.warehouses.map((w, idx) => (
+                        <div key={w.id} className="flex items-center gap-3">
+                          <div className="w-40 text-sm font-medium">{w.name || `Warehouse ${idx + 1}`}</div>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10000}
+                            className="border rounded-md h-9 px-3 w-full bg-background"
+                            value={w.palletLocations}
+                            onChange={(e) => {
+                              const val = Math.max(1, Math.min(10000, parseInt(e.target.value || '1', 10)));
+                              setSettings((s) => {
+                                if (!s) return s;
+                                const next = s.warehouses.map((ww, i) => (i === idx ? { ...ww, palletLocations: val } : ww));
+                                return { warehouses: next };
+                              });
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Button onClick={() => setConfirmSaveOpen(true)}>Save Settings</Button>
+                  </div>
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
+        )}
+        {canManage && (
+          <Card>
+            <CardHeader>
               <CardTitle>Security Settings</CardTitle>
               <CardDescription>Configure security and authentication options.</CardDescription>
             </CardHeader>
@@ -259,6 +351,35 @@ export function SettingsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmDelete}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      {/* Confirm changing settings */}
+      <AlertDialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to change these settings?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Changing warehouse counts or pallet locations can impact operations. This action will update the configuration immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!settings) return;
+                try {
+                  await api<WarehouseSettings>('/api/settings', { method: 'PUT', body: JSON.stringify(settings) });
+                  toast.success('Settings saved');
+                } catch (e: any) {
+                  toast.error(e?.message || 'Failed to save settings');
+                } finally {
+                  setConfirmSaveOpen(false);
+                }
+              }}
+            >
+              Yes, save changes
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

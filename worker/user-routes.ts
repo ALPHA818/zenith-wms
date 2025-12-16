@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, PalletEntity, MOCK_USERS_WITH_PASSWORDS } from "./entities";
+import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, PalletEntity, MOCK_USERS_WITH_PASSWORDS, SettingsEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
-import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema, Pallet, VehicleInspection, vehicleInspectionSchema } from "@shared/types";
+import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema, Pallet, VehicleInspection, vehicleInspectionSchema, WarehouseSettings, warehouseSettingsSchema } from "@shared/types";
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
+  // Avoid running seed checks on every request
+  let seeded = false;
   // --- AUTH ROUTES ---
   const auth = new Hono<{ Bindings: Env }>();
   auth.post('/login', async (c) => {
@@ -31,21 +33,59 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.route('/api/auth', auth);
   // --- WMS ROUTES ---
   const wms = new Hono<{ Bindings: Env }>();
-  // Ensure seed data is available
+  // Ensure seed data is available (only once per worker instance)
   wms.use('*', async (c, next) => {
-    await Promise.all([
-      ProductEntity.ensureSeed(c.env),
-      OrderEntity.ensureSeed(c.env),
-      ShipmentEntity.ensureSeed(c.env),
-      UserEntity.ensureSeed(c.env),
-      JobEntity.ensureSeed(c.env),
-      JobCardEntity.ensureSeed(c.env),
-      LocationEntity.ensureSeed(c.env),
-      GroupEntity.ensureSeed(c.env),
-      PalletEntity.ensureSeed(c.env),
-    ]);
+    if (!seeded) {
+      // Single quick check: if users index has items, assume seeded
+      const { items: users } = await UserEntity.list<typeof UserEntity>(c.env, null, 1);
+      if (users.length === 0) {
+        await Promise.all([
+          ProductEntity.ensureSeed(c.env),
+          OrderEntity.ensureSeed(c.env),
+          ShipmentEntity.ensureSeed(c.env),
+          UserEntity.ensureSeed(c.env),
+          JobEntity.ensureSeed(c.env),
+          JobCardEntity.ensureSeed(c.env),
+          LocationEntity.ensureSeed(c.env),
+          GroupEntity.ensureSeed(c.env),
+          PalletEntity.ensureSeed(c.env),
+        ]);
+      }
+      await SettingsEntity.ensureDefault(c.env);
+      seeded = true;
+    }
     await next();
   });
+
+  // Settings routes
+  const settings = new Hono<{ Bindings: Env }>();
+  settings.get('/', async (c) => {
+    // Normalize legacy shape to new shape if needed
+    const s = await SettingsEntity.get(c.env) as any;
+    let normalized: WarehouseSettings;
+    if (s && Array.isArray(s.warehouses)) {
+      normalized = { warehouses: s.warehouses };
+    } else {
+      const count = Math.max(1, Math.min(100, Number(s?.warehouseCount ?? 1)));
+      const per = Math.max(1, Math.min(10000, Number(s?.palletLocationsPerWarehouse ?? 100)));
+      normalized = { warehouses: Array.from({ length: count }, (_, i) => ({ id: `w${i + 1}`, name: `Warehouse ${i + 1}`, palletLocations: per })) };
+    }
+    return ok<WarehouseSettings>(c, normalized);
+  });
+  settings.put('/', async (c) => {
+    try {
+      const body = await c.req.json();
+      const parse = warehouseSettingsSchema.safeParse(body);
+      if (!parse.success) {
+        return bad(c, JSON.stringify(parse.error.flatten().fieldErrors));
+      }
+      const saved = await SettingsEntity.put(c.env, parse.data);
+      return ok<WarehouseSettings>(c, saved);
+    } catch (e) {
+      return bad(c, 'Invalid payload');
+    }
+  });
+  app.route('/api/settings', settings);
   // Dashboard Stats
   wms.get('/stats', async (c) => {
     try {

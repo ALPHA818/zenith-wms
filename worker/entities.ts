@@ -1,5 +1,5 @@
-import { IndexedEntity } from "./core-utils";
-import type { Product, Order, Shipment, User, Job, JobCard, Location, Message, Group, Pallet, PalletProduct } from "@shared/types";
+import { Entity, IndexedEntity } from "./core-utils";
+import type { Product, Order, Shipment, User, Job, JobCard, Location, Message, Group, Pallet, PalletProduct, WarehouseSettings } from "@shared/types";
 import { ALL_PERMISSIONS } from "@shared/types";
 // Define a type for mock users that includes the password for authentication simulation
 type MockUserWithPassword = User & { password: string };
@@ -312,4 +312,28 @@ export class PalletEntity extends IndexedEntity<Pallet> {
       totalQuantity: 0 
     };
     static seedData = MOCK_PALLETS;
+}
+
+// Single-document app settings entity
+export class SettingsEntity extends Entity<WarehouseSettings> {
+  static readonly entityName = "settings";
+  static readonly initialState: WarehouseSettings = { warehouses: [{ id: 'w1', name: 'Warehouse 1', palletLocations: 100 }] };
+
+  static async get(env: any): Promise<WarehouseSettings> {
+    const inst = new SettingsEntity(env as any, 'global');
+    return inst.getState();
+  }
+
+  static async put(env: any, next: WarehouseSettings): Promise<WarehouseSettings> {
+    const inst = new SettingsEntity(env as any, 'global');
+    await inst.save(next);
+    return next;
+  }
+
+  static async ensureDefault(env: any): Promise<void> {
+    const inst = new SettingsEntity(env as any, 'global');
+    if (!(await inst.exists())) {
+      await inst.save(SettingsEntity.initialState);
+    }
+  }
 }

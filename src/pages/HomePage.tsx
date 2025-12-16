@@ -52,8 +52,15 @@ const navCards: NavCard[] = [
 ];
 
 export function HomePage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(() => {
+    try {
+      const cached = localStorage.getItem('zenith:lastStats');
+      return cached ? (JSON.parse(cached) as DashboardStats) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(() => stats == null);
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.permissions?.includes('manage:users') ?? false;
   const userPermissions = user?.permissions || [];
@@ -63,46 +70,35 @@ export function HomePage() {
     return userPermissions.includes(permission);
   };
   useEffect(() => {
+    let cancelled = false;
     const fetchStats = async () => {
       try {
-        setLoading(true);
-        setStats(null); // Clear previous state
-        console.log('Fetching dashboard stats from /api/wms/stats...');
-        
-        // Add cache busting
+        if (!stats) setLoading(true);
         const timestamp = Date.now();
-        const data = await api<DashboardStats>(`/api/wms/stats?_=${timestamp}`);
-        console.log('Dashboard stats loaded successfully:', data);
-        console.log('Stats type:', typeof data);
-        console.log('Stats keys:', Object.keys(data || {}));
-        
-        if (!data) {
-          console.error('Stats data is null or undefined');
-          throw new Error('No data received from API');
-        }
-        
+        // Add a timeout so the UI doesn't hang if dev worker is slow
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const data = await api<DashboardStats>(`/api/wms/stats?_=${timestamp}`, { signal: controller.signal as any });
+        clearTimeout(timeoutId);
+        if (!data) throw new Error('No data received from API');
+        if (cancelled) return;
         setStats(data);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 
-                            (typeof error === 'string' ? error : 
-                            (error && typeof error === 'object' && 'message' in error ? String((error as any).message) : 
-                            'Unknown error'));
-        
-        console.error('Failed to load dashboard stats:', error);
-        console.error('Error type:', typeof error);
-        console.error('Error constructor:', error?.constructor?.name);
-        console.error('Error details:', {
-          message: errorMessage,
-          stack: error instanceof Error ? error.stack : undefined,
-          raw: error
-        });
-        
-        toast.error(`Failed to load dashboard stats: ${errorMessage}`);
+        try { localStorage.setItem('zenith:lastStats', JSON.stringify(data)); } catch {}
+      } catch (error: any) {
+        if (error?.name === 'AbortError') {
+          console.warn('Stats request timed out; using cached data if present');
+        } else {
+          console.error('Failed to load dashboard stats:', error);
+          const msg = error?.message || 'Unknown error';
+          toast.error(`Failed to load dashboard stats: ${msg}`);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchStats();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -116,7 +112,7 @@ export function HomePage() {
       
       {/* Stats Section */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        {loading ? (
+        {loading && !stats ? (
           <>
             {isAdmin && <Skeleton className="h-[126px] rounded-lg" />}
             <Skeleton className="h-[126px] rounded-lg" />
