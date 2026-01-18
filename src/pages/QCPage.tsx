@@ -203,31 +203,19 @@ export function QCPage() {
   };
 
   const recognizeText = async (dataUrl: string): Promise<{ text: string; confidence: number }> => {
-    try {
-      const result = await Tesseract.recognize(
-        dataUrl,
-        'eng',
-        {
-          // OCR tuning
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/:',
-          preserve_interword_spaces: '1',
-          user_defined_dpi: '300',
-          tessedit_pageseg_mode: '6',
-          // Use local assets (offline + CSP-friendly)
-          workerPath: '/tesseract/worker.min.js',
-          corePath: '/tesseract/tesseract-core.wasm.js',
-          langPath: '/tesseract',
-          logger: undefined,
-        } as any
-      );
-      const text = (result?.data?.text || '').replace(/\s+/g, ' ').trim();
-      const confidence = typeof result?.data?.confidence === 'number' ? result.data.confidence : 0;
-      console.info('[OCR] Base result', { confidence, snippet: text.slice(0, 160) });
-      return { text, confidence };
-    } catch (err) {
-      console.error('Tesseract recognize failed', err);
-      throw err;
-    }
+    const result = await Tesseract.recognize(
+      dataUrl,
+      'eng',
+      {
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-/:',
+        preserve_interword_spaces: '1',
+        user_defined_dpi: '300',
+        tessedit_pageseg_mode: '6'
+      }
+    );
+    const text = (result?.data?.text || '').replace(/\s+/g, ' ').trim();
+    const confidence = typeof result?.data?.confidence === 'number' ? result.data.confidence : 0;
+    return { text, confidence };
   };
 
   const createOcrVariants = async (srcDataUrl: string): Promise<string[]> => {
@@ -268,21 +256,14 @@ export function QCPage() {
       return !!(batch || expiry) || /PROD-[A-Z0-9\-]+/i.test(t);
     };
     if (good(best.text)) return best;
-    if ((best.confidence ?? 0) < 40) {
-      toast.message('Low OCR confidence', { description: 'Try a clearer photo, crop to the label area, or rotate the image.' });
-    }
     try {
       const variants = await createOcrVariants(initialDataUrl);
       for (const v of variants) {
         const cand = await recognizeText(v);
         if (cand.confidence > best.confidence) best = cand;
-        console.info('[OCR] Variant result', { confidence: cand.confidence, snippet: cand.text.slice(0, 160) });
         if (good(cand.text)) return cand;
       }
     } catch {}
-    if (!good(best.text)) {
-      toast.warning('Could not confidently read label. Please try another photo or manual entry.');
-    }
     return best;
   };
 
@@ -625,7 +606,6 @@ export function QCPage() {
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error('Failed to load image'));
-        img.crossOrigin = 'anonymous';
         img.src = dataUrl;
       });
       const canvas = canvasRef.current;
@@ -653,16 +633,6 @@ export function QCPage() {
   };
 
   const handleFileSelected = async (file: File) => {
-    // Validate file type and size
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      toast.error('Image is too large (max 10MB)');
-      return;
-    }
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;
@@ -678,7 +648,6 @@ export function QCPage() {
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error('Failed to load image'));
-        img.crossOrigin = 'anonymous';
         img.src = dataUrl;
       });
       const canvas = canvasRef.current;
@@ -750,15 +719,6 @@ export function QCPage() {
   };
 
   const handleFileSelectedSecond = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
-      return;
-    }
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      toast.error('Image is too large (max 10MB)');
-      return;
-    }
     const reader = new FileReader();
     reader.onload = async () => {
       const dataUrl = reader.result as string;

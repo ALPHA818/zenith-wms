@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
@@ -11,63 +11,76 @@ interface QRCodeProps {
   showDownload?: boolean;
   showPrint?: boolean;
   palletData?: Pallet;
+  labelTitle?: string;
+  infoFields?: Array<{ label: string; value: string }>;
 }
 
-export function QRCodeDisplay({ value, size = 200, showDownload = false, showPrint = false, palletData }: QRCodeProps) {
-  // Simple QR code placeholder using data URL with text
-  // In production, you would use a proper QR code library or API
-  const generateQRCodeDataURL = (text: string) => {
-    // Create a simple visual representation
-    // This is a placeholder - in production use qrcode library or API
+export function QRCodeDisplay({ value, size = 200, showDownload = false, showPrint = false, palletData, labelTitle, infoFields }: QRCodeProps) {
+  const generatePlaceholder = (text: string) => {
+    if (typeof document === 'undefined') return '';
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return '';
-    
     canvas.width = size;
     canvas.height = size;
-    
-    // White background
+    // Background
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, size, size);
-    
-    // Black border
+    // Quiet zone + border
+    const margin = Math.max(8, Math.floor(size * 0.06));
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
-    ctx.strokeRect(10, 10, size - 20, size - 20);
-    
-    // Create a simple pattern (not a real QR code)
-    const cellSize = (size - 40) / 10;
+    ctx.strokeRect(margin, margin, size - margin * 2, size - margin * 2);
+    // Grid
+    const modules = 25; // fixed grid for visibility
+    const gridSize = size - margin * 2;
+    const cell = gridSize / modules;
+    // Finder patterns (top-left, top-right, bottom-left)
+    const drawFinder = (gx: number, gy: number) => {
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(margin + gx * cell, margin + gy * cell, cell * 7, cell * 7);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(margin + (gx + 1) * cell, margin + (gy + 1) * cell, cell * 5, cell * 5);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(margin + (gx + 2) * cell, margin + (gy + 2) * cell, cell * 3, cell * 3);
+    };
+    drawFinder(0, 0);
+    drawFinder(modules - 7, 0);
+    drawFinder(0, modules - 7);
+    // Seeded fill for remaining modules
+    let seed = 0;
+    for (let i = 0; i < text.length; i++) seed = (seed * 131 + text.charCodeAt(i)) >>> 0;
+    const rand = () => {
+      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 0xFFFFFFFF;
+    };
     ctx.fillStyle = '#000000';
-    
-    // Generate pseudo-random pattern based on text
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      hash = hash & hash;
-    }
-    
-    for (let y = 0; y < 10; y++) {
-      for (let x = 0; x < 10; x++) {
-        const seed = (hash + x * 17 + y * 31) % 100;
-        if (seed > 50) {
-          ctx.fillRect(20 + x * cellSize, 20 + y * cellSize, cellSize - 2, cellSize - 2);
+    for (let y = 0; y < modules; y++) {
+      for (let x = 0; x < modules; x++) {
+        // Skip finder areas
+        const inTL = x < 7 && y < 7;
+        const inTR = x >= modules - 7 && y < 7;
+        const inBL = x < 7 && y >= modules - 7;
+        if (inTL || inTR || inBL) continue;
+        if (rand() < 0.35) {
+          ctx.fillRect(margin + x * cell, margin + y * cell, cell - 0.8, cell - 0.8);
         }
       }
     }
-    
-    // Add text label below
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(text, size / 2, size - 5);
-    
-    return canvas.toDataURL();
+    return canvas.toDataURL('image/png');
   };
+
+  const dataURL = useMemo(() => {
+    try {
+      return generatePlaceholder(value);
+    } catch {
+      return '';
+    }
+  }, [value, size]);
 
   const downloadQRCode = () => {
     const link = document.createElement('a');
     link.download = `qr-${value}.png`;
-    link.href = generateQRCodeDataURL(value);
+    link.href = dataURL || generatePlaceholder(value);
     link.click();
   };
 
@@ -75,7 +88,7 @@ export function QRCodeDisplay({ value, size = 200, showDownload = false, showPri
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     
-    const qrDataURL = generateQRCodeDataURL(value);
+    const qrDataURL = dataURL || generatePlaceholder(value);
     
     // Inline SVG logo
     const logoSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none" class="logo">
@@ -90,7 +103,7 @@ export function QRCodeDisplay({ value, size = 200, showDownload = false, showPri
       <text x="85" y="45" font-family="Arial, sans-serif" font-size="12" font-weight="normal" fill="currentColor" opacity="0.7">Warehouse Management</text>
     </svg>`;
     
-    // Build compact product list HTML
+    // Build compact product list HTML (pallet only)
     let productsHTML = '';
     if (palletData && palletData.products.length > 0) {
       productsHTML = `
@@ -117,12 +130,27 @@ export function QRCodeDisplay({ value, size = 200, showDownload = false, showPri
         </div>
       `;
     }
+
+    // Build info grid entries (generic labels)
+    let infoGridHTML = '';
+    if (infoFields && infoFields.length > 0) {
+      infoGridHTML = `
+        <div class="info-grid">
+          ${infoFields.map(f => `
+            <div class="info-item">
+              <span class="info-label">${f.label}</span>
+              <span class="info-value">${f.value}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
     
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Print Pallet Label - ${value}</title>
+          <title>Print ${labelTitle || (palletData ? 'Pallet Label' : 'QR Label')} - ${value}</title>
           <style>
             @media print {
               @page {
@@ -280,7 +308,7 @@ export function QRCodeDisplay({ value, size = 200, showDownload = false, showPri
         <body>
           <div class="container">
             ${logoSVG}
-            <h1>PALLET LABEL</h1>
+            <h1>${labelTitle || (palletData ? 'PALLET LABEL' : 'QR LABEL')}</h1>
             
             ${palletData ? `
               <div class="info-grid">
@@ -311,7 +339,7 @@ export function QRCodeDisplay({ value, size = 200, showDownload = false, showPri
                   </div>
                 ` : ''}
               </div>
-            ` : ''}
+            ` : infoGridHTML}
             
             <img src="${qrDataURL}" alt="QR Code for ${value}" />
             <div class="id">${value}</div>
@@ -331,12 +359,19 @@ export function QRCodeDisplay({ value, size = 200, showDownload = false, showPri
   return (
     <Card className="inline-block">
       <CardContent className="p-4 space-y-2">
-        <img 
-          src={generateQRCodeDataURL(value)} 
-          alt={`QR Code for ${value}`}
-          className="mx-auto"
-          style={{ width: size, height: size }}
-        />
+        {dataURL ? (
+          <img 
+            src={dataURL} 
+            alt={`QR Code for ${value}`}
+            className="mx-auto"
+            style={{ width: size, height: size }}
+          />
+        ) : (
+          <div className="mx-auto border border-dashed rounded p-3 text-center text-xs text-muted-foreground" style={{ width: size }}>
+            QR unavailable
+            <div className="mt-1 break-all">{value}</div>
+          </div>
+        )}
         {(showDownload || showPrint) && (
           <div className="flex gap-2">
             {showDownload && (

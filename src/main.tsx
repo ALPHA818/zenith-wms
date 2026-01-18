@@ -28,7 +28,8 @@ import { PalletProdPage } from '@/pages/PalletProdPage';
 import { PalletRawPage } from '@/pages/PalletRawPage';
 import { QCPage } from '@/pages/QCPage';
 import { ScanningPage } from '@/pages/ScanningPage';
-import { LabelsPage } from '@/pages/LabelsPage';
+import { ProductionPage } from '@/pages/ProductionPage';
+import ProductionEventPage from '@/pages/ProductionEventPage';
 const router = createBrowserRouter([
   {
     path: "/login",
@@ -97,32 +98,25 @@ const router = createBrowserRouter([
         element: <QCPage />,
       },
       {
-        path: "/labels",
-        element: <LabelsPage />,
-      },
-      {
         path: "/scanning",
         element: <ScanningPage />,
       },
+      {
+        path: "/production",
+        element: <ProductionPage />,
+      },
+      {
+        path: "/production-event/:id",
+        element: <ProductionEventPage />,
+      },
     ]
   }
-], {
-  future: {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true,
-  },
-});
+]);
 // Do not touch this code
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <RouterProvider
-        router={router}
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
-        }}
-      />
+      <RouterProvider router={router} />
     </ErrorBoundary>
   </StrictMode>,
 )

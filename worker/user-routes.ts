@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import type { Env } from './core-utils';
-import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, PalletEntity, MOCK_USERS_WITH_PASSWORDS, SettingsEntity } from "./entities";
+import { ProductEntity, OrderEntity, ShipmentEntity, UserEntity, JobEntity, JobCardEntity, LocationEntity, MessageEntity, GroupEntity, PalletEntity, MOCK_USERS_WITH_PASSWORDS, SettingsEntity, ProductionEventEntity } from "./entities";
 import { ok, bad, notFound } from './core-utils';
 import { DashboardStats, Order, Product, Shipment, User, productSchema, orderSchema, shipmentSchema, userSchema, InventorySummaryItem, OrderTrendItem, loginSchema, Job, JobCard, jobSchema, jobCardSchema, Location, locationSchema, OrderStatus, Message, messageSchema, Group, groupSchema, Pallet, VehicleInspection, vehicleInspectionSchema, WarehouseSettings, warehouseSettingsSchema } from "@shared/types";
+import { z } from 'zod';
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // Avoid running seed checks on every request
   let seeded = false;
@@ -190,6 +191,127 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const existed = await PalletEntity.delete(c.env, id);
     if (!existed) return notFound(c, 'Pallet not found');
     return ok(c, { success: true });
+  });
+
+  // --- PRODUCTION ROUTE ---
+  // Consumes raw materials and produces finished goods by adjusting inventory
+  const productionSchema = z.object({
+    rawItems: z.array(z.object({ productId: z.string().min(1), quantity: z.number().int().positive(), batchCode: z.string().optional(), expiryDate: z.string().optional(), supplier: z.string().optional(), rawName: z.string().optional() })).min(1),
+    outputItems: z.array(z.object({ productId: z.string().min(1), quantity: z.number().int().positive(), batchCode: z.string().optional(), expiryDate: z.string().optional(), supplier: z.string().optional(), rawName: z.string().optional() })).min(1),
+    notes: z.string().optional(),
+  });
+  wms.post('/production', async (c) => {
+    try {
+      const body = await c.req.json();
+      const parsed = productionSchema.safeParse(body);
+      if (!parsed.success) {
+        return bad(c, JSON.stringify(parsed.error.flatten().fieldErrors));
+      }
+      const { rawItems, outputItems } = parsed.data;
+      const userId = c.req.header('X-User-Id') || 'unknown';
+      const userName = c.req.header('X-User-Name') || 'Unknown User';
+
+      // Validate raw material availability before performing any mutations
+      for (const item of rawItems) {
+        const productEntity = new ProductEntity(c.env, item.productId);
+        if (!(await productEntity.exists())) {
+          return notFound(c, `Raw product not found: ${item.productId}`);
+        }
+        const product = await productEntity.getState();
+        if (product.quantity < item.quantity) {
+          return bad(c, `Insufficient inventory for ${product.id}. Available: ${product.quantity}, requested: ${item.quantity}`);
+        }
+      }
+
+      // Subtract raw materials
+      for (const item of rawItems) {
+        const productEntity = new ProductEntity(c.env, item.productId);
+        if (!(await productEntity.exists())) {
+          return notFound(c, `Raw product not found: ${item.productId}`);
+        }
+        await productEntity.mutate((product) => {
+          const newQty = Math.max(0, product.quantity - item.quantity);
+          const newStatus: Product['status'] = newQty === 0 ? 'Out of Stock' : newQty < 50 ? 'Low Stock' : 'In Stock';
+          return { ...product, quantity: newQty, status: newStatus, lastUpdated: new Date().toISOString() };
+        });
+      }
+
+      // Add finished goods
+      for (const item of outputItems) {
+        const productEntity = new ProductEntity(c.env, item.productId);
+        if (!(await productEntity.exists())) {
+          // If finished good doesn't exist, fail fast (could also create, but keeping strict)
+          return notFound(c, `Output product not found: ${item.productId}`);
+        }
+        await productEntity.mutate((product) => {
+          const newQty = product.quantity + item.quantity;
+          const newStatus: Product['status'] = newQty === 0 ? 'Out of Stock' : newQty < 50 ? 'Low Stock' : 'In Stock';
+          return { ...product, quantity: newQty, status: newStatus, lastUpdated: new Date().toISOString() };
+        });
+      }
+
+      // Return updated inventory snapshot for the involved products
+      const updatedIds = [...new Set([...rawItems.map(i => i.productId), ...outputItems.map(i => i.productId)])];
+      const updatedProducts: Product[] = [];
+      for (const id of updatedIds) {
+        const entity = new ProductEntity(c.env, id);
+        if (await entity.exists()) {
+          updatedProducts.push(await entity.getState());
+        }
+      }
+      // Enrich items with locationId
+      const enrichWithLocation = async (items: typeof rawItems) => {
+        const out: typeof rawItems = [];
+        for (const item of items) {
+          const entity = new ProductEntity(c.env, item.productId);
+          let locationId: string | undefined = undefined;
+          if (await entity.exists()) {
+            const prod = await entity.getState();
+            locationId = prod.locationId;
+          }
+          out.push({ ...item, locationId });
+        }
+        return out;
+      };
+      const rawItemsWithLoc = await enrichWithLocation(rawItems);
+      const outputItemsWithLoc = await enrichWithLocation(outputItems);
+
+      // Record production event
+      const { items: existingEvents } = await ProductionEventEntity.list<typeof ProductionEventEntity>(c.env);
+      const nextIdNum = existingEvents.length + 1;
+      const eventId = `PROD-EVT-${String(nextIdNum).padStart(6, '0')}`;
+      const event = await ProductionEventEntity.create(c.env, {
+        id: eventId,
+        userId,
+        userName,
+        timestamp: new Date().toISOString(),
+        rawItems: rawItemsWithLoc,
+        outputItems: outputItemsWithLoc,
+        notes: parsed.data.notes,
+      });
+      return ok(c, { updatedProducts, eventId: event.id });
+    } catch (e) {
+      return bad(c, 'Invalid payload');
+    }
+  });
+
+  // Production history listing
+  wms.get('/production/history', async (c) => {
+    const { items } = await ProductionEventEntity.list<typeof ProductionEventEntity>(c.env);
+    // Sort newest first
+    items.sort((a, b) => (b.timestamp.localeCompare(a.timestamp)));
+    return ok(c, items);
+  });
+
+  // Single production event
+  wms.get('/production/events/:id', async (c) => {
+    const id = c.req.param('id');
+    const entity = new ProductionEventEntity(c.env, id);
+    if (!(await entity.exists())) {
+      return notFound(c, 'Production event not found');
+    }
+    const evt = await entity.getState();
+    return ok(c, evt);
   });
   
   wms.post('/inventory', async (c) => {

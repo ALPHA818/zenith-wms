@@ -1,5 +1,5 @@
 import { Entity, IndexedEntity } from "./core-utils";
-import type { Product, Order, Shipment, User, Job, JobCard, Location, Message, Group, Pallet, PalletProduct, WarehouseSettings } from "@shared/types";
+import type { Product, Order, Shipment, User, Job, JobCard, Location, Message, Group, Pallet, PalletProduct, WarehouseSettings, ProductionEvent } from "@shared/types";
 import { ALL_PERMISSIONS } from "@shared/types";
 // Define a type for mock users that includes the password for authentication simulation
 type MockUserWithPassword = User & { password: string };
@@ -336,4 +336,12 @@ export class SettingsEntity extends Entity<WarehouseSettings> {
       await inst.save(SettingsEntity.initialState);
     }
   }
+}
+
+// Production event entity to record runs
+export class ProductionEventEntity extends IndexedEntity<ProductionEvent> {
+  static readonly entityName = "production-event";
+  static readonly indexName = "production-events";
+  static readonly initialState: ProductionEvent = { id: "", userId: "", userName: "", timestamp: "", rawItems: [], outputItems: [], notes: undefined };
+  static seedData: ProductionEvent[] = [];
 }

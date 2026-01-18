@@ -399,6 +399,28 @@ export const messageSchema = z.object({
 });
 export type MessageFormData = z.infer<typeof messageSchema>;
 
+// Production Types
+export const productionLineItemSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.number().int().positive(),
+  batchCode: z.string().optional(),
+  expiryDate: z.string().optional(),
+  supplier: z.string().optional(),
+  rawName: z.string().optional(),
+  locationId: z.string().optional(),
+});
+export const productionEventSchema = z.object({
+  id: z.string(),
+  userId: z.string().min(1),
+  userName: z.string().min(1),
+  timestamp: z.string(),
+  rawItems: z.array(productionLineItemSchema),
+  outputItems: z.array(productionLineItemSchema),
+  notes: z.string().optional(),
+});
+export type ProductionLineItem = z.infer<typeof productionLineItemSchema>;
+export type ProductionEvent = z.infer<typeof productionEventSchema>;
+
 // Zod Schema for Group Validation
 export const groupSchema = z.object({
   id: z.string().optional(),

@@ -6,8 +6,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 export VITE_ENABLE_CF_PLUGIN=true
- # Use strict CSP during Electron dev to avoid 'unsafe-eval' warning in Electron
- export VITE_CSP="default-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; script-src 'self' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http: https: ws: wss:; worker-src 'self' blob:; frame-src 'self'"
 
 # Stop any previous servers
 npm run stop >/dev/null 2>&1 || true
