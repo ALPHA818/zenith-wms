@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Warehouse, LogIn } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster, toast } from 'sonner';
+const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
@@ -39,7 +40,15 @@ export function LoginPage() {
       <div className="absolute inset-0 bg-grid-slate-100/[0.05] bg-[bottom_1px_center] dark:bg-grid-slate-400/[0.05] dark:bg-bottom mask-gradient" />
       <div className="z-10 flex flex-col items-center text-center">
         <div className="flex items-center gap-3 mb-6">
-          <img src="/logo.svg" alt="Zenith WMS Logo" className="h-16 w-16" />
+          <img
+            src={logoUrl}
+            alt="Zenith WMS Logo"
+            className="h-16 w-16"
+            onError={(e) => {
+              // Fallback: hide broken image but keep title visible
+              e.currentTarget.style.display = 'none';
+            }}
+          />
           <h1 className="text-4xl font-bold tracking-tight">Zenith Food WMS</h1>
         </div>
         <p className="text-muted-foreground mb-8 max-w-md">

@@ -2,6 +2,7 @@ const { app, BrowserWindow, shell, dialog } = require('electron');
 const path = require('node:path');
 const http = require('node:http');
 const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
 
 let mainWindow = null;
 
@@ -57,7 +58,11 @@ async function createWindow() {
     const unpackedIndex = path.join(__dirname, '../dist/index.html');
     const asarIndex = path.join(process.resourcesPath || path.join(__dirname, '..'), 'app.asar', 'dist', 'index.html');
     const indexPath = fs.existsSync(unpackedIndex) ? unpackedIndex : asarIndex;
-    mainWindow.loadFile(indexPath);
+    const fileUrl = pathToFileURL(indexPath).toString();
+    // Ensure initial hash points to login so HashRouter matches a defined route
+    mainWindow.loadURL(`${fileUrl}#/login`);
+    // Optionally open devtools to debug packaged issues (comment to disable)
+    // mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

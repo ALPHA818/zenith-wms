@@ -30,6 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import { Permission } from "@shared/types";
+const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
 interface NavItem {
   href: string;
   icon: React.ElementType;
@@ -66,7 +67,14 @@ export function AppSidebar(): JSX.Element {
     <Sidebar>
       <SidebarHeader>
         <Link to="/" className="flex items-center gap-2.5 px-2 py-1">
-          <img src="/logo.svg" alt="Zenith WMS" className="h-10 w-10" />
+          <img
+            src={logoUrl}
+            alt="Zenith WMS"
+            className="h-10 w-10"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
           <span className="text-lg font-semibold tracking-tight">Zenith WMS</span>
         </Link>
       </SidebarHeader>

@@ -1,8 +1,66 @@
 {
   "name": "zenith-wms-r-ypkuxpwxsnrzjvm_fit",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
+  "description": "Zenith WMS desktop app built with Electron and Vite",
+  "author": {
+    "name": "ALPHA818",
+    "email": "alpha818@example.com"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "appId": "com.alpha818.zenithwms",
+    "productName": "Zenith WMS",
+    "files": [
+      {
+        "filter": [
+          "dist/**",
+          "!dist/**.{7z,zip,deb,AppImage,yml}",
+          "!dist/win-unpacked/**",
+          "!dist/linux-unpacked/**",
+          "electron/**",
+          "package.json"
+        ]
+      }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ALPHA818",
+        "repo": "zenith-wms"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "icon": "icons/png"
+    },
+    "electronVersion": "32.3.3"
+  },
   "scripts": {
     "dev": "VITE_ENABLE_CF_PLUGIN=true vite --host 0.0.0.0 --port 3000",
     "dev:bg": "bash ./start-background.sh",
@@ -71,6 +129,7 @@
     "lucide-react": "^0.525.0",
     "next-themes": "^0.4.6",
     "pino": "^9.11.0",
+    "qrcode": "^1.5.3",
     "react": "^18.3.1",
     "react-day-picker": "^9.8.0",
     "react-dom": "^18.3.1",
@@ -83,7 +142,6 @@
     "react-swipeable": "^7.0.2",
     "react-use": "^17.6.0",
     "recharts": "2.15.4",
-    "qrcode": "^1.5.3",
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
@@ -103,6 +161,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.21",
+    "electron": "^32.3.3",
     "eslint": "^9.31.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

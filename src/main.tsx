@@ -5,7 +5,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   createBrowserRouter,
+  createHashRouter,
   RouterProvider,
+  Navigate,
 } from "react-router-dom";
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
@@ -30,7 +32,17 @@ import { QCPage } from '@/pages/QCPage';
 import { ScanningPage } from '@/pages/ScanningPage';
 import { ProductionPage } from '@/pages/ProductionPage';
 import ProductionEventPage from '@/pages/ProductionEventPage';
-const router = createBrowserRouter([
+// Use hash routing in packaged/prod to avoid 404s in file:// and zipped builds
+const isFile = typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+const useHash = isFile || (import.meta as any).env?.PROD;
+// Ensure hash exists on initial load in packaged Electron
+if (typeof window !== 'undefined') {
+  if (useHash && !window.location.hash) {
+    window.location.hash = '/';
+  }
+}
+
+const routes = [
   {
     path: "/login",
     element: <LoginPage />,
@@ -111,7 +123,14 @@ const router = createBrowserRouter([
       },
     ]
   }
-]);
+  ,
+  // Catch-all: redirect to home to avoid 404 in packaged builds
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
+  }
+];
+const router = useHash ? createHashRouter(routes) : createBrowserRouter(routes);
 // Do not touch this code
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

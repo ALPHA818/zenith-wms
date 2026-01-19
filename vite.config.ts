@@ -91,6 +91,8 @@ export default ({ mode }: { mode: string }) => {
   const enableCf = env.VITE_ENABLE_CF_PLUGIN === 'true';
   return defineConfig({
     plugins: [react(), ...(enableCf ? [cloudflare()] : []), watchDependenciesPlugin()],
+    // Use relative base so built assets resolve under file:// in Electron
+    base: './',
     build: {
       minify: true,
       sourcemap: "inline", // Use inline source maps for better error reporting

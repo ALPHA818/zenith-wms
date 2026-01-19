@@ -34,7 +34,11 @@ export function ErrorFallback({
     if (onGoHome) {
       onGoHome();
     } else {
-      window.location.href = '/';
+      if (window.location.protocol === 'file:') {
+        window.location.hash = '/';
+      } else {
+        window.location.href = '/';
+      }
     }
   };
 
