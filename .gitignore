@@ -26,6 +26,7 @@ dist/
 build/
 out/
 public/build/
+release/
 
 # Vite / bundler caches
 .vite/
@@ -55,6 +56,10 @@ dev-server.log
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
+.env.*
+!.env.example
 
 # OS files
 .DS_Store
