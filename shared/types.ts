@@ -24,6 +24,7 @@ export interface User {
   name: string;
   email: string;
   permissions: Permission[];
+  password?: string; // Only populated for admins viewing user list
 }
 
 export interface Message {

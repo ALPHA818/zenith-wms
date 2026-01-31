@@ -36,6 +36,7 @@ export function SettingsPage() {
     return stored === 'true';
   });
   const [palletListOpen, setPalletListOpen] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   
   const authUser = useAuthStore((state) => state.user);
   const canManage = authUser?.permissions?.includes('manage:users') ?? false;
@@ -148,6 +149,7 @@ export function SettingsPage() {
               <div>
                 <CardTitle className="text-lg">{user.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
+                {canManage && user.password && <p className="text-sm font-mono mt-1">Password: {showPasswords ? user.password : '••••••••'}</p>}
               </div>
               {canManage && renderActions(user)}
             </CardHeader>
@@ -169,7 +171,7 @@ export function SettingsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Permissions</TableHead>
+              <TableHead>Name</TableHead><TableHead>Email</TableHead>{canManage && <TableHead>Password</TableHead>}<TableHead>Permissions</TableHead>
               {canManage && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -177,6 +179,7 @@ export function SettingsPage() {
             {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.name}</TableCell><TableCell>{user.email}</TableCell>
+                {canManage && <TableCell><span className="font-mono text-sm">{showPasswords ? (user.password || '••••••••') : '••••••••'}</span></TableCell>}
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {(user.permissions || []).length > 0 ? (
@@ -327,9 +330,21 @@ export function SettingsPage() {
               <CardTitle>User Management</CardTitle>
               <CardDescription>Add, remove, or edit user permissions.</CardDescription>
             </div>
-            {canManage && (
-              <Button onClick={handleAddUser}><PlusCircle className="mr-2 h-4 w-4" />Add User</Button>
-            )}
+            <div className="flex items-center gap-4">
+              {canManage && (
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="show-passwords"
+                    checked={showPasswords}
+                    onCheckedChange={setShowPasswords}
+                  />
+                  <Label htmlFor="show-passwords" className="cursor-pointer">Show Passwords</Label>
+                </div>
+              )}
+              {canManage && (
+                <Button onClick={handleAddUser}><PlusCircle className="mr-2 h-4 w-4" />Add User</Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {renderUserContent()}

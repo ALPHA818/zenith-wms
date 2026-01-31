@@ -87,10 +87,14 @@ export const GroupFormSheet: React.FC<GroupFormSheetProps> = ({
           body: JSON.stringify(formData),
         });
       } else {
+        const memberIds = user?.id
+          ? Array.from(new Set([user.id, ...formData.memberIds]))
+          : formData.memberIds;
         await api('/api/wms/groups', {
           method: 'POST',
           body: JSON.stringify({
             ...formData,
+            memberIds,
             createdBy: user?.id,
           }),
         });

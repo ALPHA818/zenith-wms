@@ -225,7 +225,7 @@ export function InventoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>SKU</TableHead><TableHead>Product Name</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Quantity</TableHead><TableHead>Location</TableHead><TableHead>Status</TableHead><TableHead>Expiry Date</TableHead><TableHead>Storage Temp</TableHead><TableHead>Allergens</TableHead>
+                <TableHead>SKU</TableHead><TableHead>Product Name</TableHead><TableHead>Category</TableHead><TableHead className="text-right">Quantity</TableHead><TableHead>Location</TableHead><TableHead>Status</TableHead><TableHead>Expiry Date</TableHead><TableHead>Batch Code</TableHead><TableHead>Allergens</TableHead>
                 {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>

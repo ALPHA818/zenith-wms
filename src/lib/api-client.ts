@@ -1,4 +1,5 @@
 import { ApiResponse } from "../../shared/types"
+import { useAuthStore } from "@/stores/authStore"
 
 function resolveApiUrl(path: string): string {
   const isFile = typeof window !== 'undefined' && window.location.protocol === 'file:';
@@ -9,7 +10,14 @@ function resolveApiUrl(path: string): string {
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const url = resolveApiUrl(path);
-  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...init })
+  const user = useAuthStore.getState().user;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  
+  if (user?.id) {
+    headers['X-User-Id'] = user.id;
+  }
+  
+  const res = await fetch(url, { ...init, headers: { ...headers, ...(init?.headers || {}) } })
   
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: ${res.statusText}`)

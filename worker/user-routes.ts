@@ -711,6 +711,18 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // --- USERS CRUD ---
   wms.get('/users', async (c) => {
     const { items } = await UserEntity.list<typeof UserEntity>(c.env);
+    // Check if requester is admin and include passwords
+    const userId = c.req.header('X-User-Id');
+    const isAdmin = userId && MOCK_USERS_WITH_PASSWORDS.find(u => u.id === userId && u.permissions.includes('manage:users'));
+    
+    if (isAdmin) {
+      // Return users with passwords
+      const usersWithPasswords = items.map(user => {
+        const mockUser = MOCK_USERS_WITH_PASSWORDS.find(u => u.id === user.id);
+        return mockUser ? { ...user, password: mockUser.password } : user;
+      });
+      return ok(c, usersWithPasswords as User[]);
+    }
     return ok(c, items as User[]);
   });
   wms.post('/users', async (c) => {
@@ -1006,7 +1018,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       return bad(c, JSON.stringify(validation.error.flatten().fieldErrors));
     }
     const { id, ...rest } = validation.data;
-    const existing = new GroupEntity(c.env, id);
+    const resolvedId = id ?? `group-${crypto.randomUUID()}`;
+    const existing = new GroupEntity(c.env, resolvedId);
     if (await existing.exists()) {
       return bad(c, JSON.stringify({ id: ["Group ID already exists."] }));
     }
@@ -1015,7 +1028,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     const userId = c.req.header('X-User-Id') || 'system';
     
     const newGroup: Group = {
-      id,
+      id: resolvedId,
       ...rest,
       createdAt: new Date().toISOString(),
       createdBy: userId,

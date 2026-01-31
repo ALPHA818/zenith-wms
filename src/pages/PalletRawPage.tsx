@@ -36,6 +36,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function PalletRawPage() {
   const [pallets, setPallets] = useState<Pallet[]>([]);
@@ -250,9 +256,20 @@ export function PalletRawPage() {
                           {pallet.monthsUntilExpiry}mo
                         </Badge>
                         {pallet.monthsUntilExpiry === 7 && (
-                          <Badge variant="outline" className="border-orange-500 text-orange-700">
-                            Notify QC/QA
-                          </Badge>
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">
+                                  <Badge variant="outline" className="border-orange-500 text-orange-700 cursor-help">
+                                    Notify QC/QA
+                                  </Badge>
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="text-sm">This raw material pallet is approaching expiration (7 months remaining). Quality Control/Quality Assurance should be notified to prioritize usage or conduct additional quality checks before expiration.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </>
                     )}
