@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zenith WMS</string>
+    <string name="title_activity_main">Zenith WMS</string>
+    <string name="package_name">com.alpha818.zenithwms</string>
+    <string name="custom_url_scheme">com.alpha818.zenithwms</string>
+</resources>

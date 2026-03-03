@@ -4,7 +4,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Download } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useInactivityLogout } from "@/hooks/use-inactivity-logout";
 type AppLayoutProps = {
@@ -47,6 +47,26 @@ export function AppLayout({ children, container = false, className, contentClass
     logout();
     navigate('/login');
   };
+
+  const handleDownload = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    let downloadUrl = '';
+    
+    // Check for mobile platforms first
+    if (userAgent.includes('android')) {
+      downloadUrl = '/downloads/zenith-wms.apk';
+    } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+      downloadUrl = '/downloads/zenith-wms.ipa';
+    } else if (userAgent.includes('win')) {
+      downloadUrl = '/downloads/zenith-wms-setup.exe';
+    } else if (userAgent.includes('mac')) {
+      downloadUrl = '/downloads/zenith-wms.dmg';
+    } else {
+      downloadUrl = '/downloads/zenith-wms.AppImage';
+    }
+    
+    window.open(downloadUrl, '_blank');
+  };
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
@@ -54,6 +74,9 @@ export function AppLayout({ children, container = false, className, contentClass
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
           <SidebarTrigger />
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={handleDownload} aria-label="Download app">
+              <Download className="h-5 w-5" />
+            </Button>
             <ThemeToggle className="" />
             <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Log out">
               <LogOut className="h-5 w-5" />

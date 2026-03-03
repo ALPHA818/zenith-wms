@@ -1,0 +1,9 @@
+{
+  "appId": "com.alpha818.zenithwms",
+  "appName": "zenith-wms",
+  "webDir": "dist",
+  "server": {
+    "url": "http://192.168.0.180:3000",
+    "cleartext": true
+  }
+}
