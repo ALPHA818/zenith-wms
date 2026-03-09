@@ -25,8 +25,10 @@ import jsQR from "jsqr";
 // @ts-ignore
 import Tesseract from "tesseract.js";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function QCPage() {
+  const isMobile = useIsMobile(1024);
   const [activeTab, setActiveTab] = useState<"receiving" | "dispatch" | "completed">("receiving");
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -819,8 +821,8 @@ export function QCPage() {
           <CardDescription>Scan a product label to view batch and expiry details.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2 items-end">
-            <div className="w-64">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end">
+            <div className="w-full md:w-64">
               <Label htmlFor="label-mode">Context</Label>
               <Select value={labelMode} onValueChange={(v) => setLabelMode(v as 'dispatch' | 'receiving')}>
                 <SelectTrigger id="label-mode">
@@ -838,7 +840,7 @@ export function QCPage() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 md:flex-row">
             <div className="flex-1">
               <Label htmlFor="label-input">Label Code / QR</Label>
               <Input
@@ -851,8 +853,8 @@ export function QCPage() {
                 className="font-mono mt-1"
               />
             </div>
-            <div className="flex items-end gap-2">
-              <Button onClick={() => handleLabelScan(labelInput)} className="gap-2" disabled={!labelInput.trim()}>
+            <div className="grid grid-cols-2 gap-2 md:flex md:items-end">
+              <Button onClick={() => handleLabelScan(labelInput)} className="gap-2 col-span-2 md:col-span-1" disabled={!labelInput.trim()}>
                 <ScanIcon className="h-4 w-4" />
                 Lookup
               </Button>
@@ -914,16 +916,16 @@ export function QCPage() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "receiving" | "dispatch" | "completed")} className="space-y-6">
-        <TabsList className="grid w-full max-w-2xl grid-cols-3">
-          <TabsTrigger value="receiving" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="receiving" className="flex items-center justify-center gap-1 px-2 text-xs sm:text-sm">
             <Package className="h-4 w-4" />
             Receiving
           </TabsTrigger>
-          <TabsTrigger value="dispatch" className="flex items-center gap-2">
+          <TabsTrigger value="dispatch" className="flex items-center justify-center gap-1 px-2 text-xs sm:text-sm">
             <TruckIcon className="h-4 w-4" />
             Dispatch
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex items-center gap-2">
+          <TabsTrigger value="completed" className="flex items-center justify-center gap-1 px-2 text-xs sm:text-sm">
             <CheckCircle className="h-4 w-4" />
             Completed
           </TabsTrigger>
@@ -956,6 +958,45 @@ export function QCPage() {
                   </div>
                 </div>
               ) : (
+                isMobile ? (
+                  <div className="space-y-3">
+                    {relevantShipments.map((shipment) => (
+                      <div key={shipment.id} className="rounded-lg border p-4 space-y-3 bg-card">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium">{shipment.id}</p>
+                            <p className="text-xs text-muted-foreground">Order: {shipment.orderId}</p>
+                          </div>
+                          <Badge variant={shipment.status === 'Delivered' ? 'default' : 'secondary'}>
+                            {shipment.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Carrier: {shipment.carrier}</p>
+                        {shipment.receivingInspection ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewInspection('receiving', shipment.receivingInspection!, shipment)}
+                            className="w-full gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleInspection(shipment)}
+                            className="w-full gap-2"
+                          >
+                            <ClipboardCheck className="h-4 w-4" />
+                            Inspect
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1003,6 +1044,8 @@ export function QCPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
+                )
               )}
             </CardContent>
           </Card>
@@ -1035,6 +1078,45 @@ export function QCPage() {
                   </div>
                 </div>
               ) : (
+                isMobile ? (
+                  <div className="space-y-3">
+                    {relevantShipments.map((shipment) => (
+                      <div key={shipment.id} className="rounded-lg border p-4 space-y-3 bg-card">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium">{shipment.id}</p>
+                            <p className="text-xs text-muted-foreground">Order: {shipment.orderId}</p>
+                          </div>
+                          <Badge variant={shipment.status === 'Preparing' ? 'secondary' : 'default'}>
+                            {shipment.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Carrier: {shipment.carrier}</p>
+                        {shipment.dispatchInspection ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewInspection('dispatch', shipment.dispatchInspection!, shipment)}
+                            className="w-full gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => handleInspection(shipment)}
+                            className="w-full gap-2"
+                          >
+                            <ClipboardCheck className="h-4 w-4" />
+                            Inspect
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1082,6 +1164,8 @@ export function QCPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
+                )
               )}
             </CardContent>
           </Card>
@@ -1114,6 +1198,44 @@ export function QCPage() {
                   </div>
                 </div>
               ) : (
+                isMobile ? (
+                  <div className="space-y-3">
+                    {relevantShipments.map((shipment) => {
+                      const inspection = shipment.dispatchInspection || shipment.receivingInspection;
+                      const inspectionType = shipment.dispatchInspection ? 'Dispatch' : 'Receiving';
+                      return (
+                        <div key={shipment.id} className="rounded-lg border p-4 space-y-3 bg-card">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-medium">{shipment.id}</p>
+                              <p className="text-xs text-muted-foreground">Order: {shipment.orderId}</p>
+                            </div>
+                            <Badge variant={inspectionType === 'Dispatch' ? 'default' : 'secondary'}>
+                              {inspectionType}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Inspector: {inspection?.inspectorName || 'Unknown'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Date: {inspection?.inspectionDate ? new Date(inspection.inspectionDate).toLocaleString() : 'N/A'}
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const inspType = inspectionType.toLowerCase() as 'dispatch' | 'receiving';
+                              handleViewInspection(inspType, inspection!, shipment);
+                            }}
+                            className="w-full gap-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View Details
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1164,6 +1286,8 @@ export function QCPage() {
                     })}
                   </TableBody>
                 </Table>
+                </div>
+                )
               )}
             </CardContent>
           </Card>
@@ -1185,7 +1309,7 @@ export function QCPage() {
       )}
 
       <Dialog open={inspectionDialogOpen} onOpenChange={setInspectionDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedInspection?.type === 'dispatch' ? 'Dispatch' : 'Receiving'} Inspection Details
@@ -1201,7 +1325,7 @@ export function QCPage() {
               {/* Vehicle Condition */}
               <div>
                 <h3 className="font-semibold mb-3">Vehicle Interior Condition</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex items-center gap-2">
                     <Badge variant={selectedInspection.data.hasHoles ? "destructive" : "secondary"}>
                       {selectedInspection.data.hasHoles ? "✗" : "✓"}
@@ -1279,6 +1403,7 @@ export function QCPage() {
               {/* Products */}
               <div>
                 <h3 className="font-semibold mb-3">Products ({selectedInspection.data.items.length})</h3>
+                <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1297,6 +1422,7 @@ export function QCPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </div>
 
               {/* Notes */}
@@ -1339,7 +1465,7 @@ export function QCPage() {
 
       {/* Label Details Dialog */}
       <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Product Label Details</DialogTitle>
             <DialogDescription>Information extracted from the scanned label.</DialogDescription>
@@ -1350,7 +1476,7 @@ export function QCPage() {
                 <Package className="h-4 w-4 text-primary" />
                 <span className="font-semibold">{labelDetails.product.name}</span>
               </div>
-              <div className="w-64">
+              <div className="w-full md:w-64">
                 <Label htmlFor="dlg-label-mode">Context</Label>
                 <Select value={labelMode} onValueChange={(v) => setLabelMode(v as 'dispatch' | 'receiving')}>
                   <SelectTrigger id="dlg-label-mode" className="mt-1">
@@ -1362,7 +1488,7 @@ export function QCPage() {
                   </SelectContent>
                 </Select>
               </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1 col-span-2">
                       <Label htmlFor="dlg-product">Product</Label>
                       <Select

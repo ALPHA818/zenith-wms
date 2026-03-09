@@ -3,7 +3,14 @@
   "appName": "zenith-wms",
   "webDir": "dist",
   "server": {
-    "url": "http://192.168.0.180:3000",
+    "hostname": "localhost",
+    "androidScheme": "http",
+    "allowMixedContent": true,
     "cleartext": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
   }
 }

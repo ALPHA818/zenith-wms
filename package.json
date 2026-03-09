@@ -73,7 +73,7 @@
     "preview": "bun run build && vite preview --host 0.0.0.0 --port 4173",
     "deploy": "bun run build && npx wrangler deploy",
     "cf-typegen": "npx wrangler types",
-    "prepare": "bun .bootstrap.js || true",
+    "prepare": "node -e \"const fs=require('node:fs');const cp=require('node:child_process');const hasBootstrap=fs.existsSync('.bootstrap.js');const probe=cp.spawnSync(process.platform==='win32'?'where':'which',['bun'],{stdio:'ignore'});if(hasBootstrap&&probe.status===0){const r=cp.spawnSync('bun',['.bootstrap.js'],{stdio:'inherit'});process.exit(r.status??0);}\"",
     "stop": "pkill -f 'vite|wrangler' || true && rm -f .dev-server.pid",
     "status": "bash ./check-status.sh",
     "dev:electron": "bash ./dev-electron.sh",

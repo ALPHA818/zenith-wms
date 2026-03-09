@@ -61,7 +61,7 @@ export function JobCardFormSheet({ isOpen, onClose, onSubmit, card, jobs, select
   }, [card, form, isOpen, jobs, selectedJobId]);
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-lg">
+      <SheetContent className="w-[95vw] sm:max-w-lg">
         <SheetHeader>
           <SheetTitle>{isEditing ? "Edit Job Card" : "Create New Job Card"}</SheetTitle>
           <SheetDescription>
@@ -69,7 +69,7 @@ export function JobCardFormSheet({ isOpen, onClose, onSubmit, card, jobs, select
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6 overflow-y-auto max-h-[calc(100vh-12rem)] pr-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-6 overflow-y-auto max-h-[calc(100vh-12rem)] pr-2 sm:pr-4">
             <FormField
               control={form.control}
               name="id"
@@ -153,13 +153,13 @@ export function JobCardFormSheet({ isOpen, onClose, onSubmit, card, jobs, select
                 </FormItem>
               )}
             />
-            <SheetFooter className="pt-4 sticky bottom-0 bg-background">
+            <SheetFooter className="pt-4 sticky bottom-0 bg-background flex-col gap-2 sm:flex-row">
               <SheetClose asChild>
-                <Button type="button" variant="outline">
+                <Button type="button" variant="outline" className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </SheetClose>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button type="submit" disabled={form.formState.isSubmitting} className="w-full sm:w-auto">
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? "Save Changes" : "Create Card"}
               </Button>

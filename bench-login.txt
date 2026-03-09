@@ -1,0 +1,1 @@
+﻿iterations=50 success=50 failures=0 avg_ms=49 min_ms=5 p95_ms=9 max_ms=2099

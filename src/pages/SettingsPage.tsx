@@ -40,7 +40,7 @@ export function SettingsPage() {
   
   const authUser = useAuthStore((state) => state.user);
   const canManage = authUser?.permissions?.includes('manage:users') ?? false;
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(1024);
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
@@ -247,8 +247,8 @@ export function SettingsPage() {
                     <Label>Per-warehouse pallet locations</Label>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {settings.warehouses.map((w, idx) => (
-                        <div key={w.id} className="flex items-center gap-3">
-                          <div className="w-40 text-sm font-medium">{w.name || `Warehouse ${idx + 1}`}</div>
+                        <div key={w.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                          <div className="text-sm font-medium sm:w-40">{w.name || `Warehouse ${idx + 1}`}</div>
                           <input
                             type="number"
                             min={1}
@@ -284,7 +284,7 @@ export function SettingsPage() {
               <CardDescription>Configure security and authentication options.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="auto-logout" className="text-base cursor-pointer">
                     Auto-logout on inactivity
@@ -309,14 +309,14 @@ export function SettingsPage() {
             <CardDescription>View and manage all warehouse pallets.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-0.5">
                 <Label className="text-base">Pallet List</Label>
                 <p className="text-sm text-muted-foreground">
                   View all pallets with their details, locations, and expiry information
                 </p>
               </div>
-              <Button onClick={() => setPalletListOpen(true)}>
+              <Button onClick={() => setPalletListOpen(true)} className="w-full sm:w-auto">
                 <List className="mr-2 h-4 w-4" />
                 View All Pallets
               </Button>
@@ -325,12 +325,12 @@ export function SettingsPage() {
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>User Management</CardTitle>
               <CardDescription>Add, remove, or edit user permissions.</CardDescription>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
               {canManage && (
                 <div className="flex items-center gap-2">
                   <Switch
@@ -342,7 +342,7 @@ export function SettingsPage() {
                 </div>
               )}
               {canManage && (
-                <Button onClick={handleAddUser}><PlusCircle className="mr-2 h-4 w-4" />Add User</Button>
+                <Button onClick={handleAddUser} className="w-full sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />Add User</Button>
               )}
             </div>
           </CardHeader>

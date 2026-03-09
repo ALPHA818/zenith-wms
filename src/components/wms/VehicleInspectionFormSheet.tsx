@@ -150,7 +150,7 @@ export function VehicleInspectionFormSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-2xl overflow-y-auto">
+      <SheetContent className="w-[95vw] sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>
             {inspectionType === 'dispatch' ? 'Dispatch' : 'Receiving'} Inspection - {shipmentId}
@@ -175,7 +175,7 @@ export function VehicleInspectionFormSheet({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="hasHoles"
@@ -405,7 +405,7 @@ export function VehicleInspectionFormSheet({
               </CardHeader>
               <CardContent className="space-y-4">
                 {fields.map((field, index) => (
-                  <div key={field.id} className="flex gap-2 items-start border p-3 rounded-md">
+                  <div key={field.id} className="flex flex-col gap-2 sm:flex-row sm:items-start border p-3 rounded-md">
                     <div className="flex-1 space-y-3">
                       <FormField
                         control={form.control}
@@ -471,7 +471,7 @@ export function VehicleInspectionFormSheet({
                       variant="ghost"
                       size="icon"
                       onClick={() => remove(index)}
-                      className="mt-8"
+                      className="self-end sm:self-auto sm:mt-8"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -509,13 +509,13 @@ export function VehicleInspectionFormSheet({
               )}
             />
 
-            <SheetFooter className="sticky bottom-0 bg-background pt-4 border-t">
+            <SheetFooter className="sticky bottom-0 bg-background pt-4 border-t flex-col gap-2 sm:flex-row">
               <SheetClose asChild>
-                <Button type="button" variant="outline">
+                <Button type="button" variant="outline" className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </SheetClose>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button type="submit" disabled={form.formState.isSubmitting} className="w-full sm:w-auto">
                 {form.formState.isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}

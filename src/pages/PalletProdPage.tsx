@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { PalletFormSheet } from "@/components/wms/PalletFormSheet";
 import { PalletListDialog } from "@/components/wms/PalletListDialog";
 import { QRCodeDisplay } from "@/components/wms/QRCodeDisplay";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 
 export function PalletProdPage() {
+  const isMobile = useIsMobile(1024);
   const [pallets, setPallets] = useState<Pallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
@@ -177,23 +179,23 @@ export function PalletProdPage() {
   return (
     <AppLayout container>
       <div className="space-y-4 mb-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <PageHeader 
             title="PalletProd" 
             subtitle="Manage finished product pallets ready for distribution." 
           />
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setPalletListOpen(true)}>
+          <div className="grid w-full grid-cols-2 gap-2 md:flex md:w-auto">
+            <Button variant="outline" onClick={() => setPalletListOpen(true)} className="w-full md:w-auto">
               <List className="h-4 w-4 mr-2" />
-              View All Pallets
+              {isMobile ? 'All Pallets' : 'View All Pallets'}
             </Button>
-            <Button onClick={handleCreatePallet}>
+            <Button onClick={handleCreatePallet} className="w-full md:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               New Pallet
             </Button>
           </div>
         </div>
-        <div className="relative max-w-md">
+        <div className="relative w-full md:max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by pallet ID, location, product name, or batch code..."
@@ -232,9 +234,9 @@ export function PalletProdPage() {
             // Extract number from pallet ID (e.g., PLT-000001 -> 000001)
             const palletNumber = pallet.id.split('-').pop() || '000000';
             return (
-            <Card key={pallet.id} className="hover:shadow-lg transition-shadow">
+            <Card key={pallet.id} className="hover:shadow-lg transition-shadow overflow-hidden">
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex items-center gap-3">
                     <Package className="h-6 w-6 text-primary" />
                     <div>
@@ -242,7 +244,7 @@ export function PalletProdPage() {
                       <p className="text-xs text-muted-foreground mt-1">{pallet.id}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
                     {pallet.monthsUntilExpiry !== undefined && pallet.monthsUntilExpiry !== null && (
                       <>
                         <Badge variant={pallet.monthsUntilExpiry <= 6 ? "destructive" : pallet.monthsUntilExpiry === 7 ? "secondary" : "default"} className={pallet.monthsUntilExpiry > 8 ? "bg-green-600 hover:bg-green-700" : ""}>
@@ -250,7 +252,7 @@ export function PalletProdPage() {
                           {pallet.monthsUntilExpiry}mo
                         </Badge>
                         {pallet.monthsUntilExpiry === 7 && (
-                          <Badge variant="outline" className="border-orange-500 text-orange-700">
+                          <Badge variant="outline" className="border-orange-500 text-orange-700 text-[10px] sm:text-xs">
                             Notify QC/QA
                           </Badge>
                         )}
@@ -286,7 +288,7 @@ export function PalletProdPage() {
                     </DropdownMenu>
                   </div>
                 </div>
-                <CardDescription className="flex items-center gap-2 mt-3">
+                <CardDescription className="flex items-center gap-2 mt-3 break-all">
                   <MapPin className="h-4 w-4" />
                   {pallet.locationId}
                 </CardDescription>
@@ -298,8 +300,8 @@ export function PalletProdPage() {
                 )}
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 text-muted-foreground break-all">
                     <Calendar className="h-4 w-4" />
                     {formatDate(pallet.createdDate)}
                   </div>
@@ -330,10 +332,10 @@ export function PalletProdPage() {
                           </Badge>
                         </div>
                         
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="font-mono">{product.id}</span>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span className="font-mono break-all">{product.id}</span>
                           <span>•</span>
-                          <span>{product.category}</span>
+                          <span className="break-words">{product.category}</span>
                         </div>
 
                         {product.batchCode && (
@@ -395,7 +397,7 @@ export function PalletProdPage() {
       <PalletListDialog isOpen={palletListOpen} onClose={() => setPalletListOpen(false)} />
       
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-lg">
           <DialogHeader>
             <DialogTitle>Pallet QR Code</DialogTitle>
             <DialogDescription>
@@ -404,7 +406,7 @@ export function PalletProdPage() {
           </DialogHeader>
           <div className="flex justify-center py-4">
             {selectedPalletForQR && (
-              <QRCodeDisplay value={selectedPalletForQR.id} size={250} showDownload={true} showPrint={true} palletData={selectedPalletForQR} />
+              <QRCodeDisplay value={selectedPalletForQR.id} size={isMobile ? 180 : 250} showDownload={true} showPrint={true} palletData={selectedPalletForQR} />
             )}
           </div>
         </DialogContent>

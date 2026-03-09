@@ -15,6 +15,7 @@ import { InventorySummaryItem, OrderTrendItem } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Generate 100 distinct colors
 const generateColors = (count: number) => {
@@ -40,6 +41,7 @@ const generateColors = (count: number) => {
 const COLORS = generateColors(100);
 
 export function ReportsPage() {
+  const isMobile = useIsMobile(1024);
   const [inventoryData, setInventoryData] = useState<InventorySummaryItem[]>([]);
   const [orderData, setOrderData] = useState<OrderTrendItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +60,13 @@ export function ReportsPage() {
     }, rotationSpeed);
     return () => clearInterval(interval);
   }, [rotationSpeed, isRotating]);
+
+  useEffect(() => {
+    if (isMobile) {
+      setIsRotating(false);
+      setRotationSpeed(120);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,12 +120,16 @@ export function ReportsPage() {
   };
 
   const renderPieChart = (data: InventorySummaryItem[]) => {
+    const chartHeight = isMobile ? 420 : 1000;
+    const chartRadius = isMobile ? 130 : 350;
+    const labelRadiusOffset = isMobile ? 18 : 40;
+
     return (
-      <div className="flex gap-8 items-start">
+      <div className="flex flex-col gap-4 lg:flex-row lg:gap-8 lg:items-start">
         {/* Legend on the left */}
-        <div className="flex-shrink-0 w-64">
+        <div className="w-full lg:w-64 lg:flex-shrink-0">
           <h3 className="font-semibold mb-4">Products</h3>
-          <ScrollArea className="h-[1000px]">
+          <ScrollArea className={isMobile ? "h-56" : "h-[1000px]"}>
             <div className="space-y-2">
               {data.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2 text-sm">
@@ -134,7 +147,7 @@ export function ReportsPage() {
 
         {/* Pie chart on the right */}
         <div className="flex-1">
-          <ResponsiveContainer width="100%" height={1000}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <PieChart>
               <Pie 
                 data={data} 
@@ -142,11 +155,11 @@ export function ReportsPage() {
                 nameKey="name" 
                 cx="50%"
                 cy="50%" 
-                outerRadius={350} 
+                outerRadius={chartRadius} 
                 fill="hsl(var(--primary))" 
-                label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+                label={isMobile ? false : ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
                   const RADIAN = Math.PI / 180;
-                  const radius = outerRadius + 40;
+                  const radius = outerRadius + labelRadiusOffset;
                   const x = cx + radius * Math.cos(-midAngle * RADIAN);
                   const y = cy + radius * Math.sin(-midAngle * RADIAN);
                   
@@ -188,7 +201,7 @@ export function ReportsPage() {
       <div className="grid gap-8 grid-cols-1">
         <Card className="col-span-full">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>
                 Inventory by Product
                 {pieChartChunks.length > 1 && (
@@ -197,7 +210,7 @@ export function ReportsPage() {
                   </span>
                 )}
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -315,12 +328,12 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="w-full h-[1000px]" />
+              <Skeleton className={isMobile ? "w-full h-[420px]" : "w-full h-[1000px]"} />
             ) : currentChunk.length > 0 ? (
               <>
                 {renderPieChart(currentChunk)}
                 {pieChartChunks.length > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-4">
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-4">
                     <Button
                       variant="outline"
                       size="sm"
@@ -346,7 +359,7 @@ export function ReportsPage() {
                 )}
               </>
             ) : (
-              <div className="flex items-center justify-center h-[1000px] text-muted-foreground">
+              <div className={isMobile ? "flex items-center justify-center h-[420px] text-muted-foreground" : "flex items-center justify-center h-[1000px] text-muted-foreground"}>
                 No products found
               </div>
             )}
@@ -358,9 +371,9 @@ export function ReportsPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <Skeleton className="w-full h-[600px]" />
+              <Skeleton className={isMobile ? "w-full h-[360px]" : "w-full h-[600px]"} />
             ) : (
-              <ResponsiveContainer width="100%" height={600}>
+              <ResponsiveContainer width="100%" height={isMobile ? 360 : 600}>
                 <BarChart data={orderData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />

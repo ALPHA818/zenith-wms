@@ -21,6 +21,7 @@ import { api } from "@/lib/api-client";
 import { Pallet } from "@shared/types";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PalletListDialogProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ interface PalletListDialogProps {
 }
 
 export function PalletListDialog({ isOpen, onClose }: PalletListDialogProps) {
+  const isMobile = useIsMobile(1024);
   const [pallets, setPallets] = useState<Pallet[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,7 +85,53 @@ export function PalletListDialog({ isOpen, onClose }: PalletListDialogProps) {
   const rawPallets = pallets.filter(p => p.type === 'Raw');
   const allPallets = pallets;
 
-  const renderPalletTable = (palletList: Pallet[]) => (
+  const renderPalletTable = (palletList: Pallet[]) => {
+    if (isMobile) {
+      return (
+        <div className="max-h-[65vh] overflow-y-auto space-y-3 pr-1">
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-lg border p-4 space-y-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+            ))
+          ) : palletList.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No pallets found.</div>
+          ) : (
+            palletList.map((pallet) => {
+              const palletNumber = pallet.id.split('-').pop() || '000000';
+              return (
+                <div key={pallet.id} className="rounded-lg border p-4 space-y-2 bg-card">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">#{palletNumber}</p>
+                      <p className="text-xs text-muted-foreground break-all">{pallet.id}</p>
+                    </div>
+                    <Badge variant="outline" className="gap-1">
+                      {pallet.type === 'Product' ? <Package className="h-3 w-3" /> : <PackageOpen className="h-3 w-3" />}
+                      {pallet.type}
+                    </Badge>
+                  </div>
+                  <div className="text-sm space-y-1">
+                    <div className="flex items-center gap-1"><MapPin className="h-3 w-3" />{pallet.locationId}</div>
+                    <div className="flex items-center gap-1"><Package className="h-3 w-3" />Items: {pallet.products.length}</div>
+                    <div className="font-medium">Total Qty: {pallet.totalQuantity.toLocaleString()}</div>
+                    {pallet.expiryDate && (
+                      <div className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(pallet.expiryDate)}</div>
+                    )}
+                    {getExpiryBadge(pallet.monthsUntilExpiry)}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      );
+    }
+
+    return (
     <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
       <Table>
         <TableHeader className="sticky top-0 bg-background z-10">
@@ -167,11 +215,12 @@ export function PalletListDialog({ isOpen, onClose }: PalletListDialogProps) {
         </TableBody>
       </Table>
     </div>
-  );
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl">
+      <DialogContent className="w-[95vw] max-w-6xl">
         <DialogHeader>
           <DialogTitle>Pallet List</DialogTitle>
           <DialogDescription>

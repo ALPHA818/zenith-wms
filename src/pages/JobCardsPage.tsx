@@ -11,6 +11,7 @@ import { Job, JobCard, JobCardStatus, JobCardFormData } from "@shared/types";
 import { api } from "@/lib/api-client";
 import { Toaster, toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { PlusCircle, MoreHorizontal, Edit, Trash2, FileText, Upload } from "lucide-react";
 import { JobCardFormSheet } from "@/components/wms/JobCardFormSheet";
 import { JobCardActionDialog } from "@/components/wms/JobCardActionDialog";
@@ -27,7 +28,7 @@ const SortableJobCard = ({ card, onEdit, onDelete, onViewActions }: { card: JobC
   
   return (
     <Card ref={setNodeRef} style={style} {...attributes} {...listeners} className="mb-4 bg-card touch-none">
-      <CardHeader className="p-4 flex flex-row items-center justify-between">
+      <CardHeader className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
           <CardTitle className="text-base font-medium flex items-center gap-2">
             {card.title}
@@ -37,7 +38,7 @@ const SortableJobCard = ({ card, onEdit, onDelete, onViewActions }: { card: JobC
             <p className="text-xs text-muted-foreground mt-1">Order: {card.orderId}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           {needsAction && (
             <Button 
               variant={card.status === 'Awaiting QC' ? "default" : "outline"} 
@@ -69,7 +70,7 @@ const SortableJobCard = ({ card, onEdit, onDelete, onViewActions }: { card: JobC
 const KanbanColumn = ({ title, cards, onEdit, onDelete, onViewActions }: { title: string, cards: JobCard[], onEdit: (card: JobCard) => void, onDelete: (card: JobCard) => void, onViewActions: (card: JobCard) => void }) => {
   const { setNodeRef } = useSortable({ id: title });
   return (
-    <div ref={setNodeRef} className="flex-1 min-w-[300px] bg-muted/50 rounded-lg p-4">
+    <div ref={setNodeRef} className="w-full min-w-0 md:flex-1 md:min-w-[300px] bg-muted/50 rounded-lg p-4">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <SortableContext items={cards.map(c => c.id)} strategy={verticalListSortingStrategy}>
         {cards.map(card => <SortableJobCard key={card.id} card={card} onEdit={onEdit} onDelete={onDelete} onViewActions={onViewActions} />)}
@@ -78,6 +79,7 @@ const KanbanColumn = ({ title, cards, onEdit, onDelete, onViewActions }: { title
   );
 };
 export function JobCardsPage() {
+  const isMobile = useIsMobile(1024);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [cards, setCards] = useState<JobCard[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
@@ -176,9 +178,9 @@ export function JobCardsPage() {
   return (
     <AppLayout container contentClassName="flex flex-col h-full">
       <PageHeader title="Job Cards" subtitle="Manage and track individual job cards.">
-        <div className="flex items-center gap-4">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-4">
           <Select value={selectedJobId} onValueChange={setSelectedJobId} disabled={loading.jobs}>
-            <SelectTrigger className="w-[280px]">
+            <SelectTrigger className="w-full sm:w-[280px]">
               <SelectValue placeholder="Select a job..." />
             </SelectTrigger>
             <SelectContent>
@@ -187,16 +189,16 @@ export function JobCardsPage() {
             </SelectContent>
           </Select>
           {canManage && (
-            <Button onClick={handleAddCard} disabled={!selectedJobId}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Create Card
+            <Button onClick={handleAddCard} disabled={!selectedJobId} className="w-full sm:w-auto">
+              <PlusCircle className="mr-2 h-4 w-4" /> {isMobile ? 'Create' : 'Create Card'}
             </Button>
           )}
         </div>
       </PageHeader>
       {loading.cards ? (
-        <div className="flex gap-6 flex-1 overflow-x-auto pb-4">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 flex-1 md:overflow-x-auto pb-4">
           {KANBAN_COLUMNS.map(col => (
-            <div key={col} className="flex-1 min-w-[300px] space-y-4">
+            <div key={col} className="w-full md:flex-1 md:min-w-[300px] space-y-4">
               <Skeleton className="h-8 w-1/2" />
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-24 w-full" />
@@ -205,7 +207,7 @@ export function JobCardsPage() {
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <div className="flex gap-6 flex-1 overflow-x-auto pb-4">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6 flex-1 md:overflow-x-auto pb-4">
             {columns.map(({ id, cards }) => (
               <KanbanColumn key={id} title={id} cards={cards} onEdit={handleEditCard} onDelete={handleDeleteClick} onViewActions={handleViewActions} />
             ))}

@@ -29,7 +29,11 @@ export function LoginPage() {
       await login({ name, password, rememberMe });
       navigate('/');
     } catch (error: any) {
-      toast.error(error.message || 'Login failed. Please check your credentials.');
+      const rawMessage = error?.message || '';
+      const message = /fetch|network|timed out|unable to reach api/i.test(rawMessage)
+        ? 'Unable to reach the server. Check API server status and network connection.'
+        : rawMessage || 'Login failed. Please check your credentials.';
+      toast.error(message);
     } finally {
       setIsLoggingIn(false);
     }
